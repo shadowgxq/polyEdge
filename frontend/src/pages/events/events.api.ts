@@ -30,6 +30,7 @@ function toEventCard(dto: EventCardDto): EventCard {
     slug: dto.slug,
     title: dto.title,
     options: dto.options.map(toEventOption),
+    optionsTotal: dto.options_total,
     overviewLabel: dto.overview_label,
     overviewOptionName: dto.overview_option_name,
     applicable: dto.applicable,

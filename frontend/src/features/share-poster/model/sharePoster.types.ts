@@ -25,6 +25,8 @@ export type SharePosterContent = {
   headline: string;
   /** 核心选项名（市场内容，不翻译）。 */
   coreOptionName: string;
+  /** 核心选项隐含概率，0..1 区间（由上游展示数据注入，海报不重算）。 */
+  impliedProbability: number;
   /** 偏差评分，上游算好，前端不重算。 */
   biasScore: number;
   /** 偏差信号呈现方式。 */
@@ -42,6 +44,14 @@ export type SharePosterContent = {
 export type PosterImage = {
   blob: Blob;
   fileName: string;
+};
+
+/** 后端上传后的海报图片地址。 */
+export type UploadedPosterImage = {
+  url: string;
+  path: string;
+  contentType: string;
+  size: number;
 };
 
 /** 运行时分发能力探测结果（design D5）。 */

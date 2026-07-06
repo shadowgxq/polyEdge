@@ -25,6 +25,7 @@ os.environ.setdefault(
     "DATABASE_URL", "postgresql+psycopg2://test:test@localhost:5432/test"
 )
 os.environ.setdefault("SECRET_KEY", "test-secret-key-only-for-tests")
+os.environ.setdefault("MARKET_PREFETCH_ENABLED", "false")
 
 from main import app
 from app.core.session import get_db
@@ -40,6 +41,7 @@ import pytest
 # 必须 import 一次 models，模型类才会注册到 Base.metadata，
 # 否则下面 create_all 建不出表。import 即"登记"，不是为了直接用它们。
 from app.models import user as _user  # noqa: F401
+from app.models import market_snapshot as _market_snapshot  # noqa: F401
 
 
 class FakeRedis:
@@ -58,8 +60,11 @@ class FakeRedis:
     def get(self, key):
         return self.store.get(key)
 
-    def set(self, key, value, ex=None):
+    def set(self, key, value, ex=None, nx=False):
+        if nx and key in self.store:
+            return False
         self.store[key] = value
+        return True
 
     def incr(self, key):
         self.store[key] = str(int(self.store.get(key, 0)) + 1)

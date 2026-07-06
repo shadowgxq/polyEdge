@@ -49,7 +49,10 @@ export function EventsPage() {
 
   return (
     <section className={styles.page}>
-      <h1 className={styles.heading}>{t('nav.eventList')}</h1>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.heading}>{t('nav.eventList')}</h1>
+        <p className={styles.subtitle}>{t('events.subtitle')}</p>
+      </header>
 
       <EventInputPanel onResolved={navigateToEvent} />
 

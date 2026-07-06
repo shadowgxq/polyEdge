@@ -16,8 +16,6 @@ import styles from './SharePosterDialog.module.css';
 
 export type SharePosterDialogProps = {
   content: SharePosterContent;
-  /** 分享链接；缺省用当前页 URL。 */
-  shareUrl?: string;
 };
 
 /**
@@ -28,18 +26,18 @@ export type SharePosterDialogProps = {
  * Web Share / 下载 / 复制图片 / 复制链接 / intent 分享入口，缺失能力对应入口隐藏并保留
  * 可用回退。离屏海报节点为出图源，随弹窗打开挂载。
  */
-export function SharePosterDialog({ content, shareUrl }: SharePosterDialogProps) {
+export function SharePosterDialog({ content }: SharePosterDialogProps) {
   return (
     <Dialog.Portal>
       <Dialog.Overlay className={styles.overlay} />
       <Dialog.Content className={styles.content}>
-        <SharePosterDialogBody content={content} shareUrl={shareUrl} />
+        <SharePosterDialogBody content={content} />
       </Dialog.Content>
     </Dialog.Portal>
   );
 }
 
-function SharePosterDialogBody({ content, shareUrl }: SharePosterDialogProps) {
+function SharePosterDialogBody({ content }: SharePosterDialogProps) {
   const { t } = useTranslation();
 
   const shareText = t('share.intent.text', { title: content.headline });
@@ -54,13 +52,14 @@ function SharePosterDialogBody({ content, shareUrl }: SharePosterDialogProps) {
     feedback,
     pendingAction,
     isReady,
+    isShareLinkReady,
     retryCapture,
     shareViaWebShare,
     downloadImage,
     copyImage,
     copyLink,
     shareToIntent,
-  } = useSharePoster({ shareUrl, shareText });
+  } = useSharePoster({ shareText });
 
   const areActionsDisabled = !isReady || pendingAction !== null;
 
@@ -79,95 +78,98 @@ function SharePosterDialogBody({ content, shareUrl }: SharePosterDialogProps) {
         {t('share.dialog.description')}
       </Dialog.Description>
 
-      <div className={styles.preview}>
-        {captureState === 'error' ? (
-          <ErrorState
-            title={t('share.dialog.captureErrorTitle')}
-            description={t('share.dialog.captureErrorHint')}
-            retryLabel={t('share.dialog.retry')}
-            onRetry={retryCapture}
-          />
-        ) : isReady && previewUrl ? (
-          <img className={styles.previewImage} src={previewUrl} alt={t('share.dialog.previewAlt')} />
-        ) : (
-          <p className={styles.generating} role="status" aria-busy="true">
-            {t('share.dialog.generating')}
-          </p>
-        )}
-      </div>
+      <div className={styles.layout}>
+        <div className={styles.preview}>
+          {captureState === 'error' ? (
+            <ErrorState
+              title={t('share.dialog.captureErrorTitle')}
+              description={t('share.dialog.captureErrorHint')}
+              retryLabel={t('share.dialog.retry')}
+              onRetry={retryCapture}
+            />
+          ) : isReady && previewUrl ? (
+            <img className={styles.previewImage} src={previewUrl} alt={t('share.dialog.previewAlt')} />
+          ) : (
+            <p className={styles.generating} role="status" aria-busy="true">
+              {t('share.dialog.generating')}
+            </p>
+          )}
+        </div>
 
-      {captureState !== 'error' ? (
-        <>
-          <div className={styles.actions}>
-            {capabilities.canWebShareFiles ? (
-              <button
-                type="button"
-                className={clsx(styles.action, styles.primary)}
-                onClick={() => void shareViaWebShare()}
-                disabled={areActionsDisabled}
-              >
-                <Share2 className={styles.icon} aria-hidden="true" />
-                {t('share.action.webShare')}
-              </button>
-            ) : null}
+        {captureState !== 'error' ? (
+          <div className={styles.controls}>
+            <div className={styles.actions}>
+              {capabilities.canWebShareFiles ? (
+                <button
+                  type="button"
+                  className={clsx(styles.action, styles.primary)}
+                  onClick={() => void shareViaWebShare()}
+                  disabled={areActionsDisabled}
+                >
+                  <Share2 className={styles.icon} aria-hidden="true" />
+                  {t('share.action.webShare')}
+                </button>
+              ) : null}
 
-            <button
-              type="button"
-              className={styles.action}
-              onClick={downloadImage}
-              disabled={areActionsDisabled}
-            >
-              <Download className={styles.icon} aria-hidden="true" />
-              {t('share.action.download')}
-            </button>
-
-            {capabilities.canCopyImage ? (
               <button
                 type="button"
                 className={styles.action}
-                onClick={() => void copyImage()}
+                onClick={downloadImage}
                 disabled={areActionsDisabled}
               >
-                <Copy className={styles.icon} aria-hidden="true" />
-                {t('share.action.copyImage')}
+                <Download className={styles.icon} aria-hidden="true" />
+                {t('share.action.download')}
               </button>
-            ) : null}
 
-            {capabilities.canCopyLink ? (
-              <button
-                type="button"
-                className={styles.action}
-                onClick={() => void copyLink()}
-                disabled={pendingAction !== null}
-              >
-                <Link2 className={styles.icon} aria-hidden="true" />
-                {t('share.action.copyLink')}
-              </button>
-            ) : null}
-          </div>
+              {capabilities.canCopyImage ? (
+                <button
+                  type="button"
+                  className={styles.action}
+                  onClick={() => void copyImage()}
+                  disabled={areActionsDisabled}
+                >
+                  <Copy className={styles.icon} aria-hidden="true" />
+                  {t('share.action.copyImage')}
+                </button>
+              ) : null}
 
-          <div className={styles.intents}>
-            <span className={styles.intentsLabel}>{t('share.intent.label')}</span>
-            <div className={styles.intentsRow}>
-              {SHARE_INTENT_TARGETS.map((target) => {
-                const platform = t(SHARE_INTENT_LABEL_KEY[target]);
-                return (
-                  <button
-                    key={target}
-                    type="button"
-                    className={styles.action}
-                    onClick={() => shareToIntent(target)}
-                    aria-label={t('share.intent.aria', { platform })}
-                  >
-                    <ExternalLink className={styles.icon} aria-hidden="true" />
-                    {platform}
-                  </button>
-                );
-              })}
+              {capabilities.canCopyLink ? (
+                <button
+                  type="button"
+                  className={styles.action}
+                  onClick={() => void copyLink()}
+                  disabled={pendingAction !== null || !isShareLinkReady}
+                >
+                  <Link2 className={styles.icon} aria-hidden="true" />
+                  {t('share.action.copyLink')}
+                </button>
+              ) : null}
+            </div>
+
+            <div className={styles.intents}>
+              <span className={styles.intentsLabel}>{t('share.intent.label')}</span>
+              <div className={styles.intentsRow}>
+                {SHARE_INTENT_TARGETS.map((target) => {
+                  const platform = t(SHARE_INTENT_LABEL_KEY[target]);
+                  return (
+                    <button
+                      key={target}
+                      type="button"
+                      className={styles.action}
+                      onClick={() => shareToIntent(target)}
+                      disabled={!isShareLinkReady}
+                      aria-label={t('share.intent.aria', { platform })}
+                    >
+                      <ExternalLink className={styles.icon} aria-hidden="true" />
+                      {platform}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </>
-      ) : null}
+        ) : null}
+      </div>
 
       <p
         className={clsx(
@@ -182,9 +184,7 @@ function SharePosterDialogBody({ content, shareUrl }: SharePosterDialogProps) {
       </p>
 
       <div className={styles.offscreen} aria-hidden="true">
-        <div ref={posterRef}>
-          <SharePosterCard content={content} generatedAt={generatedAt} />
-        </div>
+        <SharePosterCard ref={posterRef} content={content} generatedAt={generatedAt} />
       </div>
     </>
   );

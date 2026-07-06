@@ -11,6 +11,8 @@ import re
 from collections.abc import Callable, Sequence
 from urllib.parse import urlparse
 
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
 from app.core.exceptions import EventNotFoundException, UpstreamUnavailableException
 from app.schemas.analysis import (
@@ -78,6 +80,9 @@ class AnalysisService:
                     liquidity=option.liquidity,
                     volume24hr=option.volume24hr,
                     traders=option.traders,
+                    one_day_price_change=option.one_day_price_change,
+                    spread=option.spread,
+                    volume1wk=option.volume1wk,
                 )
                 for option in event.options
             ],
@@ -115,6 +120,11 @@ class AnalysisService:
                     bias_score=option.bias,
                     label=self._to_label(option),
                     excluded=option.excluded,
+                    pool=option.pool.value if option.pool is not None else None,
+                    momentum=option.momentum,
+                    fragility=option.fragility,
+                    overheat_score=option.overheat_score,
+                    watch_score=option.watch_score,
                 )
                 for option in result.options
             ],
@@ -144,18 +154,30 @@ class AnalysisService:
         overview_name = (
             (overview.label or overview.option_id) if overview is not None else None
         )
+        preview_options = self._preview_options(event.options)
         return EventCard(
             slug=event.slug,
             title=event.title,
             options=[
                 OptionOverview(name=option.outcome, price=option.price)
-                for option in event.options
+                for option in preview_options
             ],
+            options_total=len(event.options),
             overview_label=overview_label,
             overview_option_name=overview_name,
             applicable=result.applicable,
             data_snapshot_at=event.data_snapshot_at,
         )
+
+    @staticmethod
+    def _preview_options(options: Sequence) -> list:
+        """卡片选项预览：按隐含概率降序（缺价排末尾）取 TopN，多候选事件只露头部。"""
+        ordered = sorted(
+            options,
+            key=lambda option: (option.price is not None, option.price or 0.0),
+            reverse=True,
+        )
+        return ordered[: settings.event_card_option_preview]
 
     @staticmethod
     def _pick_overview_option(
@@ -206,6 +228,11 @@ class AnalysisService:
                     price=price_by_key.get((item.event_id, item.option_id)),
                     bias_score=item.bias,
                     label=BiasLabel(zh=item.label_zh, en=item.label_en),
+                    pool=item.pool.value if item.pool is not None else None,
+                    momentum=item.momentum,
+                    fragility=item.fragility,
+                    overheat_score=item.overheat_score,
+                    watch_score=item.watch_score,
                 )
                 for item in ranked[:top_n]
             ]
@@ -220,11 +247,14 @@ class AnalysisService:
     # ---------------- 事件输入：slug 解析 + 名称搜索（D8） ----------------
 
     def resolve_event(self, raw_input: str) -> EventDetail:
-        """从链接/slug 提取 slug → 判定有效性 → 按 slug 拉取明细；解析不出抛「未找到」。"""
+        """从链接/slug 提取 slug → 判定有效性 → 按 slug 拉取明细；解析不出抛「未找到」。
+
+        缓存优先（不强制回源）：命中直接返回，未命中按需单次拉取，避免请求线程被上游拖慢。
+        """
         slug = self._extract_slug(raw_input)
         if slug is None:
             raise EventNotFoundException()
-        return self.get_event_detail(slug, force_refresh=True)
+        return self.get_event_detail(slug)
 
     @staticmethod
     def _extract_slug(raw_input: str) -> str | None:
@@ -305,6 +335,9 @@ class AnalysisService:
         return self._market_data.get_popular_events()
 
 
-def build_analysis_service() -> AnalysisService:
-    """装配分析组合 service（复用市场数据 service 工厂）。"""
-    return AnalysisService(build_market_data_service())
+def build_analysis_service(db: Session | None = None) -> AnalysisService:
+    """装配分析组合 service（复用市场数据 service 工厂）。
+
+    注入 db 会话时市场数据 service 启用 DB 快照层；请求路径经 `Depends(get_db)` 传入。
+    """
+    return AnalysisService(build_market_data_service(db))

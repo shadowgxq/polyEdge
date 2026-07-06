@@ -8,88 +8,119 @@
  *        文本    → --color-text / --color-muted / --color-subtle
  *        面板    → --color-surface / --color-surface-raised（+ 阴影表达层级）
  *        品牌/交互 → --color-brand*（链接、主按钮、选中态、焦点环）
- *        信号(核心) → --color-hot|cold|fair-*（偏差三分类，见下）
+ *        信号(核心) → --color-hot|cold|fair-*（兼容命名，见下）
  *        系统态   → --color-info|warn|danger-*（提示 / 降级 / 错误）
  *   3. 信号色区分「core」与「text」两档：
  *        *-core → 填充、圆点、进度条、图标、边框强调（大色块，允许高饱和）
  *        *-text → 承载文字的场景（chip 文字、评分数字），已加深至 WCAG AA ≥4.5:1
  *        *-soft → 极浅底色（chip / 标注背景）
- *   4. 偏差三分类语义固定（口径见 docs/prd 的 bias-algorithm.md）：
- *        hot  = 高热度·泡沫风险（bias 为正 / 过热）
- *        cold = 低热度·冷门机会（bias 为负 / 被低估）
- *        fair = 合理（|bias| < 阈值，近 0，视觉最低调、不抢眼）
+ *   4. 信号色语义（口径见 docs/prd 的 bias-algorithm.md）：
+ *        hot  = 过热 / 拥挤关注信号
+ *        cold = 观察 / 低关注信号
+ *        fair = 结构正常，视觉最低调、不抢眼
  * ========================================================================== */
 
 :root {
   color-scheme: light;
 
   /* —— 字体 —— */
-  /* sans：正文与标题，系统安全栈（如需品牌展示字体可后续引入 Bricolage Grotesque 并新增 --font-display） */
+  /* sans：正文与标题，系统安全栈；中文优先保证阅读密度与字形稳定。 */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'PingFang SC', 'Microsoft YaHei', sans-serif;
   /* mono：赔率、热度、偏差评分等数据，等宽 + tabular-nums 保证数字对齐 */
-  --font-mono:
-    ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  /* display：品牌名 / 页面主标题 / 卡片标题的编辑体（Data Editorial 声调）。
+   * Bricolage Grotesque 仅覆盖拉丁字形，中文自动回退到 --font-sans 的 CJK 栈，双语都不塌。 */
+  --font-display:
+    'Fraunces', 'Bricolage Grotesque', ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
 
   /* —— 基底 / 面板 —— */
-  --color-background: #f4f2ec;      /* 页面暖浅灰底，衬托白色面板浮起 */
-  --color-surface: #ffffff;         /* 卡片、面板 */
-  --color-surface-raised: #ffffff;  /* 抬升层（弹层 / hover），靠 --shadow-pop 区分层级 */
-  --color-border: #e6e2d9;          /* 常规分隔线、卡片描边 */
-  --color-border-strong: #d0cabd;   /* 强调边框、hover 描边、坐标轴 */
+  --color-background: #f2f0e8; /* 页面暖浅灰底，衬托白色面板浮起 */
+  --color-background-deep: #e9e4d8; /* 远景纸面暗部 */
+  /* 页面氛围：暖纸底之上叠极浅的靛蓝顶光 + 冷门青的底光，营造编辑感景深而非纯色平铺。
+   * 原始色值集中在此（tokens 为单一事实源），组件只引用本 token。 */
+  --gradient-page:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(242, 240, 232, 0.14) 38%,
+      rgba(233, 228, 216, 0.52) 100%
+    ),
+    radial-gradient(980px 460px at 20% -10%, rgba(47, 95, 224, 0.12), transparent 62%),
+    radial-gradient(880px 520px at 100% 0%, rgba(14, 159, 142, 0.08), transparent 58%),
+    radial-gradient(940px 560px at 70% 114%, rgba(181, 115, 11, 0.06), transparent 62%),
+    var(--color-background);
+  --gradient-shell:
+    linear-gradient(90deg, rgba(30, 32, 40, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(30, 32, 40, 0.045) 1px, transparent 1px);
+  /* 极细颗粒质感：叠在氛围渐变之上，去掉纯色的塑料感，增加高级哑光触感（fractalNoise）。 */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --color-surface: #ffffff; /* 卡片、面板 */
+  --color-surface-raised: #fffdf7; /* 抬升层（弹层 / hover），靠 --shadow-pop 区分层级 */
+  --color-surface-blur: rgba(
+    255,
+    253,
+    247,
+    0.82
+  ); /* 吸顶 header 半透明底（配合 backdrop-filter） */
+  --color-border: #ddd7ca; /* 常规分隔线、卡片描边 */
+  --color-border-strong: #c7bfaf; /* 强调边框、hover 描边、坐标轴 */
 
   /* —— 文本 —— */
-  --color-text: #1a1d24;            /* 主文本（≈16.9:1） */
-  --color-muted: #5f6672;           /* 次要文本、说明、数据时间（≈5.5:1） */
-  --color-subtle: #79818e;          /* 占位、坐标刻度等装饰文字（≈3.6:1，不承载关键信息） */
+  --color-text: #1a1d24; /* 主文本（≈16.9:1） */
+  --color-muted: #5f6672; /* 次要文本、说明、数据时间（≈5.5:1） */
+  --color-subtle: #79818e; /* 占位、坐标刻度等装饰文字（≈3.6:1，不承载关键信息） */
 
   /* —— 品牌 / 交互 —— */
-  --color-brand: #2f5fe0;           /* 链接、主按钮、选中 Tab（白字 on brand ≈5.5:1） */
-  --color-brand-hover: #244fc4;     /* 主交互 hover / active */
-  --color-brand-ink: #ffffff;       /* 品牌实色之上的文字 */
-  --color-brand-soft: rgba(47, 95, 224, 0.10); /* 次要按钮 / 选中项浅底 */
-  --color-focus: #2f5fe0;           /* 焦点环 outline */
+  --color-brand: #2f5fe0; /* 链接、主按钮、选中 Tab（白字 on brand ≈5.5:1） */
+  --color-brand-hover: #244fc4; /* 主交互 hover / active */
+  --color-brand-ink: #ffffff; /* 品牌实色之上的文字 */
+  --color-brand-soft: rgba(47, 95, 224, 0.1); /* 次要按钮 / 选中项浅底 */
+  --color-brand-veil: rgba(47, 95, 224, 0.06);
+  --color-focus: #2f5fe0; /* 焦点环 outline */
 
-  /* —— 信号 · 泡沫风险（hot / 正偏差） —— */
-  --color-hot-core: #e2493a;        /* 填充 / 圆点 / 进度条（偏橙红＝过热） */
-  --color-hot-text: #c62f22;        /* 文字 / 评分数字（≈5.4:1） */
-  --color-hot-soft: rgba(226, 73, 58, 0.10);
+  /* —— 信号 · 过热（hot / 拥挤关注） —— */
+  --color-hot-core: #e2493a; /* 填充 / 圆点 / 进度条（偏橙红＝过热） */
+  --color-hot-text: #c62f22; /* 文字 / 评分数字（≈5.4:1） */
+  --color-hot-soft: rgba(226, 73, 58, 0.1);
   --color-hot-border: rgba(226, 73, 58, 0.32);
 
-  /* —— 信号 · 冷门机会（cold / 负偏差） —— */
-  --color-cold-core: #0e9f8e;       /* 填充 / 圆点 / 进度条（青绿＝被低估的价值） */
-  --color-cold-text: #0a7566;       /* 文字 / 评分数字（≈5.6:1） */
+  /* —— 信号 · 观察（cold / 低关注） —— */
+  --color-cold-core: #0e9f8e; /* 填充 / 圆点 / 进度条（青绿＝观察信号） */
+  --color-cold-text: #0a7566; /* 文字 / 评分数字（≈5.6:1） */
   --color-cold-soft: rgba(14, 159, 142, 0.12);
   --color-cold-border: rgba(14, 159, 142, 0.32);
 
-  /* —— 信号 · 合理（fair / 近 0） —— */
-  --color-fair-core: #6b7480;       /* 中性灰蓝，最低调 */
-  --color-fair-text: #5c6470;       /* 文字 / 评分数字（≈5.2:1） */
-  --color-fair-soft: rgba(107, 116, 128, 0.10);
+  /* —— 信号 · 结构正常（fair / 中性） —— */
+  --color-fair-core: #6b7480; /* 中性灰蓝，最低调 */
+  --color-fair-text: #5c6470; /* 文字 / 评分数字（≈5.2:1） */
+  --color-fair-soft: rgba(107, 116, 128, 0.1);
   --color-fair-border: rgba(107, 116, 128, 0.28);
 
   /* —— 系统态 · 提示（info） —— */
   /* 语义＝中性信息（数据快照说明等）。仅用「soft 底 + text」表达，不做成按钮形，避免与可点击的 brand 混淆。 */
   --color-info-text: #2f5fe0;
-  --color-info-soft: rgba(47, 95, 224, 0.10);
+  --color-info-soft: rgba(47, 95, 224, 0.1);
 
   /* —— 系统态 · 降级警示（warn） —— */
   /* 语义＝数据降级（社交数据不足 / 纯交易热度 / 不适用偏差分析）。 */
   --color-warn-core: #b5730b;
-  --color-warn-text: #8f5b09;       /* ≈5.3:1 */
+  --color-warn-text: #8f5b09; /* ≈5.3:1 */
   --color-warn-soft: rgba(181, 115, 11, 0.12);
 
   /* —— 系统态 · 错误（danger） —— */
   /* 语义＝系统 / 请求错误（Polymarket 拉取失败、输入无法解析）。纯报警红，与「泡沫 hot」刻意区分。 */
-  --color-danger-text: #d92d20;     /* ≈4.9:1 */
-  --color-danger-soft: rgba(217, 45, 32, 0.10);
+  --color-danger-text: #d92d20; /* ≈4.9:1 */
+  --color-danger-soft: rgba(217, 45, 32, 0.1);
 
   /* —— 弹层遮罩（overlay / scrim） —— */
   /* 语义＝Dialog / 弹层背后的暗化遮罩，基色取自 --shadow-* 的 30,32,40。 */
   --color-overlay: rgba(30, 32, 40, 0.45);
+  --color-overlay-strong: rgba(20, 22, 28, 0.56);
 
-  /* —— 偏差评分轴（diverging）：冷门 ← 合理 → 泡沫 —— */
+  /* —— 偏差评分轴（diverging）：观察 ← 正常 → 过热 —— */
   --bias-track: linear-gradient(
     90deg,
     var(--color-cold-core) 0%,
@@ -99,14 +130,46 @@
 
   /* —— 圆角 —— */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 999px;
 
   /* —— 阴影（层级表达）—— */
-  --shadow-card: 0 1px 2px rgba(30, 32, 40, 0.04),
-    0 12px 28px -20px rgba(30, 32, 40, 0.20);
+  --shadow-card: 0 1px 2px rgba(30, 32, 40, 0.04), 0 12px 28px -20px rgba(30, 32, 40, 0.2);
   --shadow-pop: 0 8px 24px -8px rgba(30, 32, 40, 0.18);
+  /* 卡片 hover 抬升：比 --shadow-pop 更深、更聚焦，配合 translateY 表达「浮起可点」。 */
+  --shadow-lift: 0 2px 4px rgba(30, 32, 40, 0.05), 0 22px 40px -24px rgba(30, 32, 40, 0.3);
+  --shadow-panel:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 1px 2px rgba(30, 32, 40, 0.05),
+    0 18px 48px -34px rgba(30, 32, 40, 0.42);
+  --shadow-sticky: 0 14px 36px -32px rgba(30, 32, 40, 0.35);
+
+  /* —— 动效（统一微交互节奏）—— */
+  --transition-base: 160ms cubic-bezier(0.2, 0, 0, 1);
+  --transition-slow: 260ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* —— 玻璃质感（Glass / Soft Depth）——
+   * 磨砂白卡 + 靛蓝内发光 + 分层柔投影；原始色值集中在此，组件只引用 token。 */
+  --color-glass: rgba(255, 253, 247, 0.68); /* 卡片磨砂底（需配 backdrop-filter） */
+  --color-glass-strong: rgba(255, 253, 247, 0.88); /* hover / 输入等更实的玻璃 */
+  --color-glass-hi: rgba(255, 255, 255, 0.94); /* 顶缘受光高光描边 */
+  --blur-glass: saturate(1.7) blur(20px);
+
+  /* 分层柔投影：顶缘高光(inset) + 近景细影 + 中景扩散 + 远景靛蓝辉光，堆叠出景深。 */
+  --shadow-glass:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 1px 2px rgba(30, 32, 40, 0.04),
+    0 12px 28px -18px rgba(30, 32, 40, 0.2), 0 34px 60px -42px rgba(47, 95, 224, 0.28);
+  --shadow-glass-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 6px rgba(30, 32, 40, 0.06),
+    0 20px 40px -18px rgba(30, 32, 40, 0.24), 0 46px 84px -46px rgba(47, 95, 224, 0.4);
+
+  /* 概率条渐变填充 + 首选项品牌辉光。 */
+  --fill-lead: linear-gradient(90deg, var(--color-brand-hover) 0%, #6d8ff0 100%);
+  --fill-rest: linear-gradient(90deg, #7f8793 0%, #c3c8d1 100%);
+  --glow-brand: 0 0 12px -1px rgba(47, 95, 224, 0.55);
+  --color-track: rgba(30, 32, 40, 0.06); /* 进度条空槽底 */
+  --shadow-track-inset: inset 0 1px 2px rgba(30, 32, 40, 0.08);
 
   /* —— 间距（外壳 / 基元布局，AC-9）—— */
   --space-2xs: 4px;
@@ -118,9 +181,10 @@
 
   /* —— 外壳级布局 / 断点 —— */
   /* 内容主列最大宽度，超出居中；窄屏用 --layout-gutter 留出安全边距，防横向溢出。 */
-  --layout-max-width: 960px;
-  --layout-gutter: 16px;
-  --header-height: 56px;
+  --layout-max-width: 1180px;
+  --layout-gutter: 24px;
+  --layout-gutter-mobile: 16px;
+  --header-height: 64px;
   /* 移动端窄屏基线（AC-9）。CSS media query 无法读取 custom property，
    * 断点值以此 token 为事实源，media 中的 430px 即此值。 */
   --breakpoint-mobile: 430px;

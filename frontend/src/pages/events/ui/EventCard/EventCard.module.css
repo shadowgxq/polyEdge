@@ -1,68 +1,142 @@
+/* —— 磨砂玻璃卡片（Glass / Soft Depth）—— */
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 18px;
   min-width: 0;
-  padding: var(--space-md);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+  overflow: hidden;
+  background-color: var(--color-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--color-glass-hi);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass);
   color: inherit;
   text-decoration: none;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-slow),
+    background-color var(--transition-base),
+    border-color var(--transition-base);
+  animation: card-enter var(--transition-slow) both;
+}
+
+/* 顶部一抹靛蓝内发光，让磨砂面「透气」而非死白。 */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34), transparent 36%),
+    radial-gradient(120% 80% at 50% -20%, var(--color-brand-soft), transparent 60%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* 左缘偏差色带：默认隐形，hover 亮起，作为「可进入分析」的签名。 */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  width: 3px;
+  background: var(--bias-track);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
 .card:hover {
-  border-color: var(--color-border-strong);
+  transform: translateY(-3px);
+  background-color: var(--color-glass-strong);
+  border-color: var(--color-glass-hi);
+  box-shadow: var(--shadow-glass-hover);
+}
+
+.card:hover .title {
+  color: var(--color-brand-hover);
+}
+
+.card:hover::before {
+  opacity: 1;
 }
 
 .card:focus-visible {
   outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+/* 卡片内容压在发光层之上 */
+.head,
+.topOption,
+.options,
+.foot {
+  position: relative;
+  z-index: 1;
+}
+
+/* —— 头部：洞察 chip（eyebrow） + 标题 —— */
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
 }
 
 .title {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 1.0625rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
   color: var(--color-text);
+  transition: color var(--transition-base);
 }
 
-.overview {
-  display: flex;
-  flex-wrap: wrap;
+.insight {
+  display: inline-flex;
+  order: -1;
+  align-self: flex-start;
   align-items: center;
   gap: var(--space-xs);
-  min-width: 0;
+  max-width: 100%;
+  padding: 4px 12px 4px 9px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-glass-strong);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-pop);
 }
 
-.overviewLabel {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 2px 10px;
-  border: 1px solid var(--color-border);
+/* 偏差轴渐变小圆点（含辉光）：示意「这张卡带偏差读数」，不指向具体方向。 */
+.insightDot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
   border-radius: var(--radius-pill);
+  background: var(--bias-track);
+  box-shadow: var(--glow-brand);
+}
+
+.insightLabel {
+  min-width: 0;
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--color-text);
-  overflow-wrap: anywhere;
-}
-
-.topOption {
-  min-width: 0;
-  font-size: 0.75rem;
-  color: var(--color-muted);
   overflow-wrap: anywhere;
 }
 
 .notApplicable {
   display: inline-flex;
+  order: -1;
   align-self: flex-start;
   max-width: 100%;
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
   background-color: var(--color-warn-soft);
   color: var(--color-warn-text);
   font-size: 0.75rem;
@@ -70,16 +144,32 @@
   overflow-wrap: anywhere;
 }
 
+.topOption {
+  min-width: 0;
+  margin-top: calc(-1 * var(--space-xs));
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+/* —— 选项：名称 + 概率 + 渐变进度条 —— */
 .options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-md);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .option {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.optionRow {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -92,16 +182,130 @@
   flex: 1 1 8rem;
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--color-text);
+  font-size: 0.9375rem;
+  color: var(--color-muted);
 }
 
 .optionValue {
   flex: 0 0 auto;
   font-family: var(--font-mono);
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: var(--color-muted);
+}
+
+/* 首选项＝市场最看好项：文本加重、进度条走品牌辉光渐变，建立强度层级。 */
+.leadOption .optionName,
+.leadOption .optionValue {
+  font-weight: 600;
   color: var(--color-text);
 }
 
-.snapshot {
+.bar {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-track);
+  box-shadow: var(--shadow-track-inset);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--fill-rest);
+  transition: width var(--transition-slow);
+}
+
+.leadOption .barFill {
+  background: var(--fill-lead);
+  box-shadow: var(--glow-brand);
+}
+
+/* —— 页脚：更多提示 + 快照时间 + 进入箭头 —— */
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
   margin-top: var(--space-2xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.moreOptions {
+  flex: 0 0 auto;
+  padding: 2px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.snapshot {
+  min-width: 0;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border-radius: var(--radius-md);
+  background-color: var(--color-brand-soft);
+  color: var(--color-brand);
+  transition:
+    color var(--transition-base),
+    background-color var(--transition-base),
+    transform var(--transition-base);
+}
+
+.ctaIcon {
+  width: 17px;
+  height: 17px;
+}
+
+.card:hover .cta {
+  background-color: var(--color-brand);
+  color: var(--color-brand-ink);
+  transform: translateX(3px);
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card::before,
+  .barFill,
+  .cta {
+    transition: none;
+  }
+
+  .card {
+    animation: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+
+  .card:hover .cta {
+    transform: none;
+  }
 }

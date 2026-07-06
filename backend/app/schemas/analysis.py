@@ -48,9 +48,16 @@ class OptionAnalysis(BaseModel):
     name: str  # 选项名（outcome）
     price: float | None = None  # 赔率 / 隐含概率
     heat: float | None = None  # 热度份额 hs_i（退化/排除时可空）
-    bias_score: int | None = None  # 偏差评分 bias_i ∈ [-100, 100]
-    label: BiasLabel | None = None  # 三分类标签（zh/en），无偏差时为 None
+    bias_score: int | None = None  # 偏差评分 bias_i ∈ [-100, 100]（= 交易集中度残差）
+    label: BiasLabel | None = None  # 诚实标签（zh/en，八类之一），无偏差时为 None
     excluded: bool = False  # 是否为无效选项被排除
+
+    # 多信号扩展（bias-multi-signal，可空，向后兼容）。
+    pool: str | None = None  # 身份池：favorite / contender / longshot
+    momentum: float | None = None  # 价格动量 ∈ [-1,1]
+    fragility: float | None = None  # 流动性脆弱度 ∈ [0,1]
+    overheat_score: float | None = None  # 过热分 ∈ [0,100]
+    watch_score: float | None = None  # 观察分 ∈ [0,100]（仅冷门池）
 
 
 class EventDetail(BaseModel):
@@ -70,7 +77,10 @@ class EventCard(BaseModel):
 
     slug: str
     title: str
+    # 选项按隐含概率降序的 TopN 预览（多候选事件如世界杯冠军只展示前几名）。
     options: list[OptionOverview] = Field(default_factory=list)
+    # 该事件选项总数，供前端在预览外提示「+N 更多」并引导进详情页。
+    options_total: int = 0
     # 事件级概览偏差标签：取事件内 |bias| 最大选项的三分类标签；不适用时为 None。
     overview_label: BiasLabel | None = None
     overview_option_name: str | None = None  # 概览标签对应的选项名
@@ -96,13 +106,20 @@ class RankingItem(BaseModel):
     bias_score: int
     label: BiasLabel
 
+    # 多信号扩展（bias-multi-signal，可空，向后兼容）。
+    pool: str | None = None
+    momentum: float | None = None
+    fragility: float | None = None
+    overheat_score: float | None = None
+    watch_score: float | None = None
+
 
 class RankingBoards(BaseModel):
     """多事件排行三榜（互斥无交集，PRD §4.4、bias-algorithm §5）。"""
 
     category: EventCategory
-    bubble: list[RankingItem] = Field(default_factory=list)  # 泡沫风险榜（降序）
-    underhyped: list[RankingItem] = Field(default_factory=list)  # 冷门机会榜（升序）
+    bubble: list[RankingItem] = Field(default_factory=list)  # 过热榜（兼容字段名）
+    underhyped: list[RankingItem] = Field(default_factory=list)  # 观察榜（兼容字段名）
     fair: list[RankingItem] = Field(default_factory=list)  # 合理列表
 
 

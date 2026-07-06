@@ -8,12 +8,12 @@ describe('BiasLabel', () => {
   it('renders the English label for the hot category', async () => {
     await renderWithI18n(<BiasLabel category="hot" />, 'en');
 
-    expect(screen.getByText('Overheated · Bubble Risk')).toBeInTheDocument();
+    expect(screen.getByText('Crowded Attention Signal')).toBeInTheDocument();
   });
 
   it('renders the Chinese label for the cold category', async () => {
     await renderWithI18n(<BiasLabel category="cold" />, 'zh');
 
-    expect(screen.getByText('低热度·冷门机会')).toBeInTheDocument();
+    expect(screen.getByText('低关注·观察信号')).toBeInTheDocument();
   });
 });

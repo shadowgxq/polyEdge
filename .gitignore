@@ -33,6 +33,7 @@ Desktop.ini
 logs/
 tmp/
 .cache/
+backend/uploads/
 
 # ----- Node（安全网，防止根或新子目录出现） -----
 node_modules/

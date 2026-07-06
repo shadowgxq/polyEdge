@@ -1,152 +1,302 @@
 # 偏差算法业务规则
 
-> 本文档定义「热度」合成与「偏差评分」的业务口径，是 [PRD.md](./PRD.md) 第 5.1 节的展开。这里描述**算法语义与默认参数**，不涉及代码实现与接口契约。字段来源见 [data-source.md](./data-source.md)。
+> 本文档定义 Polymarket-only 的「关注结构偏差」口径，是 [PRD.md](./PRD.md) 第 5.1 节的展开。字段来源见 [data-source.md](./data-source.md)。
 
 ## 1. 总体思路
 
-在**单个事件内部**，比较每个选项的「**热度份额**」与其「**赔率隐含概率**」：
+本算法不预测真实胜率，也不判断某选项相对真实概率是否便宜或昂贵。只使用 Polymarket 自身可观测数据：
 
-- 热度远高于概率 → 选项被过度追捧 → **高热度·泡沫风险**。
-- 热度远低于概率 → 选项被市场忽略 → **低热度·冷门机会**。
-- 两者接近 → **合理**。
+- 先用市场价格确定身份：热门 / 中位 / 冷门。
+- 再用成交、流动性、动量、盘口判断关注度是否异常。
+- 最后输出内部可验证的结构标签：低关注热门、过热热门、观察冷门等。
 
-该方法**自包含**：所有量都在事件内部归一，不依赖任何外部「公平赔率」真值。
+诚实边界：
 
-## 2. 输入量（均来自 Polymarket，事件内每个选项 i）
+- 价格就是 Polymarket 当前市场概率；没有外部公平概率时，不能从价格和热度反推出真实价值。
+- 标签和文案不得宣称相对真实概率的高估或低估。
+- “低关注”只是关注结构信号，不等于买入机会。
 
-| 量 | 说明 | 粒度 |
+## 2. 免费可取数据
+
+2026-07-06 通过 Gamma `/events` 探针确认，世界杯冠军事件一次请求即可拿到候选项级字段：
+
+```text
+outcomePrices
+volume
+volume24hr
+volume1wk
+volume1mo
+liquidity
+spread
+bestBid
+bestAsk
+oneDayPriceChange
+oneWeekPriceChange
+competitive
+clobTokenIds
+conditionId
+```
+
+同一响应里 `numTraders` / `openInterest` 不稳定，不作为 P0。MVP 不新增社交平台、博彩、Elo、CLOB book 深度等外部请求。
+
+## 3. 输入量
+
+| 量 | 说明 | 必需性 |
 | --- | --- | --- |
-| `price_i` | 选项当前价格，≈隐含概率（0~1） | 选项级 |
-| `volume_i` | 选项累计成交量 | 选项级 |
-| `liquidity_i` | 选项流动性 | 选项级 |
-| `volume24hr_i` | 选项 24h 成交量 | 选项级 |
-| `traders_i` | 选项参与/持仓热度：per-option 交易者/持仓人数（`traders`/`holders`，若可得） | 选项级 |
-| `commentCount` | 事件评论数 | **事件级** |
+| `price_i` | 选项当前价格，近似隐含概率 | P0 |
+| `volume_i` | 累计成交量 | P0，可缺失兜底 |
+| `liquidity_i` | 流动性 | P0，可缺失兜底 |
+| `volume24hr_i` | 24h 成交量 | P0，可缺失兜底 |
+| `volume1wk_i` | 近 1 周成交量 | P0，可缺失兜底 |
+| `one_day_price_change_i` | 1 日价格变化 | P0，可缺失兜底 |
+| `spread_i` | 买卖价差 | P0，可缺失兜底 |
+| `traders_i` | per-option 参与人数，仅可得时使用 | P2 |
+| `commentCount` | 事件级评论数，仅展示 | P2 |
 
-> `commentCount` 是事件级、不区分选项，因此**不参与单选项偏差**，仅作为事件级「关注度」标签展示。
+`commentCount` 是事件级字段，不区分选项，不参与单选项偏差计算。
 
-## 3. 计算步骤
+## 4. 概率份额
 
-### 3.1 概率份额 `p_i`
+偏差只在单个事件内部比较。
 
-**作用域**：偏差在**单个事件的选项集合内**归一。两种结构统一处理——
-- 单 market 多 outcome（如二元/多结果单市场）：选项 = 各 outcome，取各 outcome 价格。
-- 多 market 组成的事件（每个 market 为一个选项，如「哪支球队夺冠」下每队一个 market）：选项 = 各子 market，取每个子 market 的「Yes」侧价格作为该选项价格。
-
-对事件内所有选项价格归一化，使 Σ = 1：
-
-```
-p_i = price_i / Σ_j price_j          （Σ_j price_j = 0 时该事件不适用偏差分析，见第 6 节）
+```text
+p_i = price_i / Σ_j price_j
 ```
 
-### 3.2 交易热度 `trade_i`
+适配两种结构：
 
-对成交量、流动性、24h 成交量、换手率分别做事件内**份额型归一** `norm`，再加权合成（权重可配，默认四项等权）：
+- 单 market 多 outcome：选项 = 各 outcome。
+- 多个 Yes/No 子 market 组成的事件：选项 = 各子 market 的 Yes 侧，例如 World Cup Winner 下每支球队一个选项。
 
-```
-turnover_i = clamp(volume24hr_i / volume_i, 0, 1)   （volume_i = 0 时该项记 0）
-trade_i = w_vol·norm(volume_i) + w_liq·norm(liquidity_i) + w_24h·norm(volume24hr_i) + w_turn·norm(turnover_i)
-默认 w_vol = w_liq = w_24h = w_turn = 1/4
-```
+若有效选项少于 2 个，或所有价格无效，该事件不适用偏差分析。
 
-- **归一函数 `norm`（唯一钉死）**：`norm(x_i) = x_i / Σ_j x_j`，即除以事件内各选项该分量之和（份额型，与概率份额同尺度）。**除零兜底**：当该分量全为 0 或 `Σ_j x_j = 0` 时，该分量对所有选项记 0（或按选项数均分份额），不产生 NaN。
-- `turnover_i`（换手率）刻画「近 24h 成交占累计成交的比例」，用于捕捉「最近突然被追捧」的加速度，与绝对成交量互补；数值截断到 `[0, 1]`（防脏数据导致 `volume24hr > volume`）。
-- 可选信号 `depth_i`（订单簿深度）：若接入 CLOB 逐选项深度，可作为第五项 `w_depth·norm(depth_i)` 加入。采用**深度（量级）**而非**买卖失衡（方向）**，与热度「关注度量级」语义一致，避免与价格/概率方向耦合。默认 `w_depth = 0`（MVP 不启用，规避逐选项拉深度的额外开销），接口预留可开。
+## 5. L0 Attention
 
-### 3.3 参与/持仓热度 `social_i`
+交易关注度优先使用免费 Gamma 字段，默认不依赖社媒或交易人数。
 
-> `social` 仅为**沿用名**：它是**平台内参与/持仓热度**（per-option 交易者/持仓人数的代理指标），**非社媒信号**，不接入任何第三方社交数据。
+```text
+turnover_i = clamp(volume24hr_i / volume_i, 0, 1)
 
-- 唯一字段为 per-option 的**交易者/持仓人数**（`traders_i` / `holders_i`）。若该字段可得，做事件内份额型归一作为参与/持仓热度：`social_i = norm(traders_i)`（`norm` 同 3.2）。
-- 若该 per-option 字段在 Polymarket API **不可得**（缺失/null，判定谓词见 3.5）→ 触发**数据退化**（见 3.5，按纯交易热度处理）。
-- 该 per-option 字段的真实可得性由**技术方案阶段的 API 探针验证后固化**；不可得时全事件退化为纯交易热度。
-
-### 3.4 热度合成分 `h_i`
-
-```
-h_i = α·trade_i + β·social_i
-默认 α = 0.7, β = 0.3（α + β = 1）
+attention_i =
+  0.00 * norm(volume_i)
++ 0.10 * norm(liquidity_i)
++ 0.45 * norm(volume24hr_i)
++ 0.25 * norm(volume1wk_i)
++ 0.20 * norm(turnover_i)
 ```
 
-### 3.5 数据退化规则
+解释：
 
-- **混合退化口径**：事件内**任一选项**缺 per-option 参与/持仓数据 → **全事件**退化为纯交易热度模式（对所有选项 `h_i = trade_i`，等价 β=0），前端标注「纯交易热度」。
-  - 理由：若部分选项含 `social`、部分不含，`hs_i` 的份额归一会落在不一致的口径上，因此按事件整体退化以保证同事件内口径一致。
-- **判定谓词「无 per-option 参与数据」**：该字段**缺失或为 `null`** 视为「无」（触发退化）；值为 **`0`** 视为**有效 0**（正常参与归一，不触发退化）。
+- `volume_i` 默认权重 0：累计成交量容易代表历史沉淀，不适合直接当实时关注。
+- `volume24hr_i` 和 `volume1wk_i` 是核心，兼顾短期爆发和近周持续度。
+- `turnover_i` 捕捉近期成交相对自身体量的活跃度。
+- `liquidity_i` 权重较低，只作为可交易性和关注基础的辅助项。
 
-### 3.6 热度份额 `hs_i`
+归一函数固定：
 
-```
-hs_i = h_i / Σ_j h_j        （Σ hs_i = 1）
-```
-
-- **除零兜底**：当 `Σ_j h_j = 0`（所有选项热度合成分为 0）时，`hs_i` 按选项数均分（`hs_i = 1/n`），不产生 NaN。
-
-### 3.7 偏差 `d_i` 与偏差评分 `bias_i`
-
-```
-d_i    = hs_i - p_i                 （范围 [-1, 1]，Σ d_i = 0）
-bias_i = clamp(round(d_i · 100), -100, 100)
+```text
+norm(x_i) = x_i / Σ_j x_j
 ```
 
-- `round` 采用**半值向上进位（round half up，远离零方向按 +0.5 规则）**：`14.5 → 15`、`-14.5 → -15`；固定该规则避免语言/库默认「banker's rounding」导致边界样例不可复现。
+某分量全 0 或缺失时，该分量对所有选项记 0，不产生 NaN。
 
-- `bias_i > 0`：热度份额超过概率份额（偏泡沫）。
-- `bias_i < 0`：热度份额低于概率份额（偏冷门）。
-- `bias_i ≈ 0`：合理。
+## 6. 参与热度退化
 
-## 4. 偏差三分类
+若全部有效选项都有 `traders_i`，可按旧口径合成：
 
-以阈值 `T`（默认 15）分档（标签含中/英两套文案，供 i18n 使用）：
+```text
+social_i = norm(traders_i)
+h_i = α * attention_i + β * social_i
+默认 α = 0.7, β = 0.3
+```
 
-| 条件 | 标签（中文） | 标签（English） |
+但当前 Gamma `/events` 的 per-option 参与人数不可稳定依赖。因此任一有效选项 `traders_i` 缺失时，全事件退化为：
+
+```text
+h_i = attention_i
+```
+
+值为 `0` 是有效 0；缺失或 `null` 才触发退化。
+
+## 7. 热度份额与保留 bias
+
+```text
+hs_i = h_i / Σ_j h_j
+d_i = hs_i - p_i
+bias_i = clamp(round_half_up(d_i * 100), -100, 100)
+```
+
+`bias_i` 保留旧数值口径，用于展示“热度份额相对价格份额的差”。它不直接决定“冷门机会”。
+
+当 `Σ_j h_j = 0` 时，`hs_i = 1 / n` 均分。
+
+## 8. 非线性预期关注度
+
+热门天然更容易吸收关注，但关注度不应按价格线性增长。因此标签判断使用非线性预期关注：
+
+```text
+ExpectedAttention_i = norm(p_i ^ gamma)
+attention_residual_i = hs_i - ExpectedAttention_i
+默认 gamma = 0.65
+```
+
+注意：
+
+- `bias_i` 仍为 `hs_i - p_i`。
+- 过热/低关注标签用 `attention_residual_i`。
+- 这能避免 France 这类 32.8% 头号热门只因没有拿到 32.8% 热度份额就被过度惩罚。
+
+## 9. 身份池
+
+身份只由市场概率决定，不由热度决定。
+
+```text
+rank_i = 1 + count(p_j > p_i)
+
+if rank_i <= 3 or p_i >= 0.20:
+  pool = favorite
+elif p_i < 0.08:
+  pool = longshot
+else:
+  pool = contender
+```
+
+关键规则：
+
+- 只有 `longshot` 池可以输出冷门类标签。
+- `favorite` 池即使低关注，也只能输出“低关注热门”，不能输出冷门。
+
+## 10. 多信号
+
+```text
+momentum_i = clamp(one_day_price_change_i / 0.10, -1, 1)
+fragility_i = clamp((spread_i / max(price_i, ε)) / 0.05, 0, 1)
+acceleration_i = clamp(volume24hr_i / (volume1wk_i / 7 + ε) - 1, -1, 1)
+```
+
+缺失字段按 0 兜底，不臆造。
+
+## 11. 过热分与观察分
+
+过热分：
+
+```text
+overheat_score =
+100 * clamp(
+  0.40 * max(attention_residual_i, 0) / 0.20
++ 0.30 * max(momentum_i, 0)
++ 0.15 * fragility_i
++ 0.15 * max(acceleration_i, 0),
+0, 1)
+```
+
+观察分仅对 `longshot` 池计算：
+
+```text
+liquidity_health_i = clamp(0.5 * (1 - fragility_i) + 0.5 * min(norm(liquidity_i) * n, 1), 0, 1)
+has_volume_i = 1 if volume_i > 0 or volume24hr_i > 0 else 0
+
+watch_score =
+100 * clamp(
+  0.40 * liquidity_health_i
++ 0.20 * max(momentum_i, 0)
++ 0.30 * (1 - fragility_i)
++ 0.10 * has_volume_i,
+0, 1)
+```
+
+非 `longshot` 池的 `watch_score` 为空。
+
+## 12. 八类标签
+
+默认阈值：
+
+```text
+T = 15
+overheat_hi = 60
+watch_hi = 55
+```
+
+| 身份池 | 条件 | 标签 |
 | --- | --- | --- |
-| `bias_i ≥ +T` | 高热度·泡沫风险 | Overheated · Bubble Risk |
-| `bias_i ≤ -T` | 低热度·冷门机会 | Underhyped · Value Opportunity |
-| `-T < bias_i < +T` | 合理 | Fairly Priced |
+| favorite | `overheat_score >= 60` | 过热热门 |
+| favorite | `attention_residual_i * 100 <= -T` | 低关注热门 |
+| favorite | 其他 | 共识热门 |
+| contender | `overheat_score >= 60` | 过热中位 |
+| contender | 其他 | 中位竞争者 |
+| longshot | `attention_residual_i * 100 >= T` | 被炒作冷门 |
+| longshot | `watch_score >= 55` | 观察冷门 |
+| longshot | 其他 | 普通冷门 |
 
-## 5. 多事件排行口径
+标签语义：
 
-- 对一组事件的**所有选项**计算各自 `bias_i`（每个选项的偏差仍在其所属事件内归一得到）。
-- 榜单取集与第 4 节三分类阈值 `T` **对齐且互斥无交集**：
-  - 泡沫风险榜：`bias_i ≥ +T` 的选项，按 `bias_i` 降序。
-  - 冷门机会榜：`bias_i ≤ -T` 的选项，按 `bias_i` 升序。
-  - 合理列表：`|bias_i| < T` 的选项。
-  - 三者按 `bias_i` 相对 `±T` 的位置划分，任一选项恰好落入且仅落入一个榜，无交集、无遗漏。
-- 每条榜单项保留其事件归属，可回跳单事件明细。
+- 低关注热门：市场概率高，但当前交易关注低于该身份预期。
+- 过热热门 / 过热中位：关注、正动量、脆弱度、加速等结构信号偏热。
+- 被炒作冷门：低概率选项的关注度明显高于其预期关注。
+- 观察冷门：低概率选项不拥挤，但流动性和盘口结构尚可，值得观察，不代表价值保证。
 
-## 6. 适用性边界
+## 13. 多事件排行
 
-| 场景 | 处理 |
+字段名可兼容旧 API，但榜别语义如下：
+
+- 过热榜：过热热门 + 过热中位 + 被炒作冷门，按 `overheat_score` 降序。
+- 观察榜：观察冷门 + 低关注热门，按 `watch_score`、`abs(bias_i)` 降序。
+- 合理：共识热门 + 中位竞争者 + 普通冷门。
+
+三榜互斥无交集。
+
+## 14. France 示例
+
+真实探针样本中 France：
+
+```text
+price = 0.3275
+rank = 1
+volume24hr ≈ 1,780,159
+volume1wk ≈ 17,415,684
+liquidity ≈ 8,168,880
+spread = 0.001
+oneDayPriceChange = -0.026
+```
+
+计算结果：
+
+```text
+pool = favorite
+bias ≈ -24 至 -28（随同事件候选集合变化）
+category = 低关注热门
+```
+
+解释：
+
+France 是市场概率最高的热门选项，但交易关注度低于其热门身份的预期，所以标记为“低关注热门”。这不是冷门机会，也不是价值判断。
+
+## 15. 参数汇总
+
+| 参数 | 默认值 |
 | --- | --- |
-| 事件仅 1 个选项 / 缺价格 | 无法做事件内相对偏差 → 标注「不适用偏差分析」，仅展示原始数据。 |
-| 选项价格全为 0 或数据缺失 | 该选项排除出偏差计算并标注。 |
+| `α / β` | 0.7 / 0.3 |
+| `w_vol / w_liq / w_24h / w_1wk / w_turn` | 0 / 0.10 / 0.45 / 0.25 / 0.20 |
+| `w_depth` | 0 |
+| `favorite_rank_max` | 3 |
+| `favorite_prob_min` | 0.20 |
+| `longshot_prob_max` | 0.08 |
+| `attention_expectation_gamma` | 0.65 |
+| `momentum_ref` | 0.10 |
+| `spread_ref` | 0.05 |
+| `crowd_ref` | 0.20 |
+| `threshold_t` | 15 |
+| `overheat_hi` | 60 |
+| `watch_hi` | 55 |
 
-- **排除后重归一**：将无效选项（价格全 0 / 数据缺失）排除后，`p_i`（3.1）与 `hs_i`（3.6）在**剩余有效选项集**上重新归一，使 Σ 仍为 1，避免无效选项占用份额。
+## 16. 验收样例
 
-## 7. 可配置参数汇总
+黄金 fixture 覆盖：
 
-| 参数 | 含义 | 默认值 |
-| --- | --- | --- |
-| `α / β` | 交易热度 / 社交热度权重 | 0.7 / 0.3 |
-| `w_vol / w_liq / w_24h / w_turn` | 交易热度内部四项权重（含换手率） | 各 1/4 |
-| `w_depth` | 交易热度内部：订单簿深度权重（可选信号，采用深度量级而非买卖失衡） | 0（MVP 默认不启用） |
-| `T` | 偏差三分类阈值 | 15 |
-
-> 参数为业务可调项，调整不改变算法语义。归一化函数 `norm` 已钉死为「除以事件内该分量之和」（份额型，见 3.2），非可配置项，同事件内口径一致。
-
-## 8. 验收黄金样例（fixture，占位，规格阶段补数值）
-
-作为算法验收基准：提供一组**固定输入 → 期望 `bias_i` / 标签**的黄金样例（fixture）。PRD 的 AC-3 以本节样例断言口径一致；真实 Polymarket 数据仅做冒烟验证。规格阶段补齐具体数值，样例须覆盖：
-
-| 用例类型 | 覆盖点 |
-| --- | --- |
-| 正常多选项 | `p_i` / `hs_i` 计算与三分类 |
-| 阈值边界 | `bias_i = +15`（恰 `≥ +T` 入泡沫）、`bias_i = -15`（恰 `≤ -T` 入冷门）、`bias_i = 14`（合理） |
-| round 半值边界 | `d_i·100 = 14.5 → 15`、`= -14.5 → -15`（半值向上进位，见 3.7） |
-| clamp 边界 | `d_i·100` 超出 `[-100, 100]` 时截断 |
-| 除零兜底 | 某分量 `Σ = 0`、`Σ h_j = 0`、`volume_i = 0` 的兜底取值（见 3.2 / 3.6） |
-| 参与数据退化 | 任一选项缺 per-option 参与数据 → 全事件纯交易热度（见 3.5） |
-| 排除后重归一 | 含无效选项（价格全 0）时剩余有效集重新归一（见第 6 节） |
-
-> 数值待规格阶段固化；一经确定即为算法回归基准，改动需同步更新样例与预期。
+- 正常多选项与 `bias_i` 数值稳定。
+- 阈值边界和 round half up。
+- 无效选项排除后重归一。
+- 参与数据缺失后的纯交易热度退化。
+- 头号热门低关注不被判为冷门。
+- 过热热门、被炒作冷门、观察冷门、普通冷门。
+- 白拿字段缺失时多信号退化为中性。

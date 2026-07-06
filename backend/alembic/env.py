@@ -11,6 +11,10 @@ from app.core.base import Base
 # 导入所有模型，使其注册到 Base.metadata，alembic autogenerate 才能发现。
 # 新增业务模型后，在此追加一行 import。
 from app.models.user import User  # noqa: F401
+from app.models.market_snapshot import (  # noqa: F401
+    MarketEventSnapshot,
+    MarketListSnapshot,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

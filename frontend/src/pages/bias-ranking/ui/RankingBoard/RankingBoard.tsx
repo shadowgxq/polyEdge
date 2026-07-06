@@ -28,6 +28,7 @@ function buildBoardPosterContent(
     eyebrowKey: titleKey,
     headline: topItem.eventTitle,
     coreOptionName: topItem.optionName,
+    impliedProbability: topItem.impliedProbability,
     biasScore: topItem.biasScore,
     signal: { kind: 'category', category },
   };

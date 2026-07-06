@@ -8,7 +8,7 @@
 - `openspec validate single-event-detail --type change --strict`（仓库根）→ valid
 - `cd frontend && pnpm typecheck` → 通过 · `pnpm lint` → 通过
 
-核对：13/14 tasks 有实现证据；`single-event.api.ts` 经 `shared/api` 调 `GET /api/v1/events/{slug}`（slug 缺失 enabled:false 不发请求）；出参对齐 `EventDetail`/`OptionAnalysis`；`/events/:eventId` route page 读 slug、加载/空/错误/成功四态分派、只读、面包屑返回；事件级降级（degraded_trade_only）/不适用（applicable=false）标注、选项「已排除」置底不参与排序；纯数值 bias_score 排序。route entry 仅 composition，UI 区块下沉。无需改 AppRouter（占位即 SingleEventPage 原地填充）。
+核对：13/14 tasks 有实现证据；`single-event.api.ts` 经 `shared/api` 调 `GET /api/v1/events/{slug}`（slug 缺失 enabled:false 不发请求）；出参对齐 `EventDetail`/`OptionAnalysis`；`/events/:eventId` route page 读 slug、加载/空/错误/成功四态分派、只读、面包屑返回；事件级降级（degraded_trade_only）/不适用（applicable=false）标注、选项 `excluded=true` 在进入列表前过滤不展示；纯数值 bias_score 排序。route entry 仅 composition，UI 区块下沉。无需改 AppRouter（占位即 SingleEventPage 原地填充）。
 
 findings：
 - **WARNING（待决 · product-manager）** — task 3.3（hot/cold/fair 信号色区分，AC-3）未勾选：`OptionAnalysis.label` 为 `{zh,en}` 文案无 category 枚举，与 `BiasLabel`/`OptionMetricsRow` 必填 category 契约冲突，故三分类信号色无法达成。前端未越界重算分类（处理正确）。属跨 change 契约缺口，需上游 analysis-api 补 category 枚举。

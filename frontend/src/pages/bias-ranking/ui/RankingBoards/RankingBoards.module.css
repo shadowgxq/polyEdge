@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 18px;
   min-width: 0;
 }
 
@@ -13,8 +13,9 @@
 .columns {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-md);
+  gap: 18px;
   min-width: 0;
+  align-items: start;
 }
 
 .column {
@@ -33,9 +34,12 @@
     min-width: 0;
     gap: var(--space-2xs);
     padding: var(--space-2xs);
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
+    background-color: var(--color-glass);
+    backdrop-filter: var(--blur-glass);
+    -webkit-backdrop-filter: var(--blur-glass);
+    border: 1px solid var(--color-glass-hi);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-glass);
   }
 
   .segment {
@@ -43,22 +47,28 @@
     min-width: 0;
     padding: var(--space-xs) var(--space-md);
     border: none;
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-md);
     background-color: transparent;
     color: var(--color-muted);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
     overflow-wrap: anywhere;
+    transition:
+      background-color var(--transition-base),
+      color var(--transition-base),
+      transform var(--transition-base);
   }
 
   .segment:hover {
     color: var(--color-text);
+    transform: translateY(-1px);
   }
 
   .segmentActive {
     background-color: var(--color-brand);
     color: var(--color-brand-ink);
+    box-shadow: var(--shadow-pop);
   }
 
   .segmentActive:hover {

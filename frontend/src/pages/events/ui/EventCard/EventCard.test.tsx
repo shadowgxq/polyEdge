@@ -16,7 +16,8 @@ const APPLICABLE_EVENT: EventCardModel = {
     { name: 'Yes', impliedProbability: 0.62 },
     { name: 'No', impliedProbability: 0.38 },
   ],
-  overviewLabel: { en: 'Overheated · Bubble Risk', zh: '高热度·泡沫风险' },
+  optionsTotal: 2,
+  overviewLabel: { en: 'Overheated Favorite', zh: '过热热门' },
   overviewOptionName: 'Yes',
   applicable: true,
   dataSnapshotAt: '2026-07-06T08:00:00Z',
@@ -31,8 +32,8 @@ describe('EventCard', () => {
       'en',
     );
 
-    expect(screen.getByText('Overheated · Bubble Risk')).toBeInTheDocument();
-    expect(screen.getByText('Highest bias: Yes')).toBeInTheDocument();
+    expect(screen.getByText('Overheated Favorite')).toBeInTheDocument();
+    expect(screen.getByText('Largest price–heat gap: Yes')).toBeInTheDocument();
     expect(screen.queryByText('Bias analysis not applicable')).not.toBeInTheDocument();
     expect(screen.getByRole('link')).toHaveAttribute('href', '/events/brazil-to-win-world-cup');
   });
@@ -53,6 +54,37 @@ describe('EventCard', () => {
     );
 
     expect(screen.getByText('Bias analysis not applicable')).toBeInTheDocument();
-    expect(screen.queryByText('Overheated · Bubble Risk')).not.toBeInTheDocument();
+    expect(screen.queryByText('Overheated Favorite')).not.toBeInTheDocument();
+  });
+
+  it('shows a "+N more" hint when the preview omits options', async () => {
+    await renderWithI18n(
+      <MemoryRouter>
+        <EventCard
+          event={{
+            ...APPLICABLE_EVENT,
+            options: [
+              { name: 'France', impliedProbability: 0.33 },
+              { name: 'Argentina', impliedProbability: 0.17 },
+            ],
+            optionsTotal: 60,
+          }}
+        />
+      </MemoryRouter>,
+      'en',
+    );
+
+    expect(screen.getByText('+58 more')).toBeInTheDocument();
+  });
+
+  it('omits the "+N more" hint when all options are shown', async () => {
+    await renderWithI18n(
+      <MemoryRouter>
+        <EventCard event={APPLICABLE_EVENT} />
+      </MemoryRouter>,
+      'en',
+    );
+
+    expect(screen.queryByText(/more$/)).not.toBeInTheDocument();
   });
 });

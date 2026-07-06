@@ -9,7 +9,7 @@
 /** 排行分类（默认落 `hot`），语义沿用外壳/列表既定分类。 */
 export type RankingCategory = 'hot' | 'world_cup';
 
-/** 三榜键：泡沫风险 / 冷门机会 / 合理。 */
+/** 三榜键：过热榜 / 观察榜 / 合理（DTO 字段名沿用 bubble/underhyped/fair）。 */
 export type RankingBoardKey = 'bubble' | 'underhyped' | 'fair';
 
 /* ------------------------------------------------------------------ *
@@ -30,6 +30,12 @@ export type RankingItemDto = {
   price: number;
   bias_score: number;
   label: RankingLabelDto;
+  /** 多信号扩展（bias-multi-signal，可空）。 */
+  pool?: string | null;
+  momentum?: number | null;
+  fragility?: number | null;
+  overheat_score?: number | null;
+  watch_score?: number | null;
 };
 
 export type RankingBoardsDto = {
@@ -56,11 +62,16 @@ export type RankingItem = {
   impliedProbability: number;
   biasScore: number;
   /**
-   * 后端已本地化偏差文案，不含 category 枚举；仅备用。
-   * 渲染唯一来源是「榜别 → BiasCategory」映射经 `BiasLabel` 基元（design D2），
-   * 不以此文案反推分类、不在前端重算偏差阈值。
+   * 后端已本地化的诚实标签文案（八类之一，bias-multi-signal）；
+   * 榜单项直接渲染此文案，行信号色仍由所属榜别注入。
    */
   label: RankingLabel;
+  /** 多信号扩展（bias-multi-signal，可空）。 */
+  pool?: string | null;
+  momentum?: number | null;
+  fragility?: number | null;
+  overheatScore?: number | null;
+  watchScore?: number | null;
 };
 
 export type RankingBoards = {

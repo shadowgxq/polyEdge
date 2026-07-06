@@ -2,11 +2,11 @@ import type { BiasCategory } from '../../shared/ui/BiasLabel';
 import type { RankingBoardKey } from './bias-ranking.types';
 
 /**
- * 三榜元数据（design D2）：榜键 → 偏差三分类 + i18n 文案 key。
+ * 三榜元数据（bias-multi-signal）：榜键 → 信号色档 + i18n 文案 key。
  *
- * 榜别与三分类一一对应（后端已按分类分好组，此映射为版块级三分类）：
- *   bubble → hot（泡沫风险）、underhyped → cold（冷门机会）、fair → fair（合理）。
- * 偏差信号色与文案统一走 `BiasLabel` 基元 + `tokens.css`，前端不重算分类。
+ * 榜别诚实语义：bubble → 过热榜（hot tone）、underhyped → 观察榜（cold tone）、
+ * fair → 合理（fair tone）。DTO 字段名沿用 bubble/underhyped/fair。
+ * 行信号色走 `category` tone + `tokens.css`；标签文案取后端各项 `label`，前端不重算分类。
  */
 export const RANKING_BOARDS = [
   {

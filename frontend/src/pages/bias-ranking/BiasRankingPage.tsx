@@ -33,7 +33,10 @@ export function BiasRankingPage() {
 
   return (
     <section className={styles.page}>
-      <h1 className={styles.heading}>{t('nav.ranking')}</h1>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.heading}>{t('nav.ranking')}</h1>
+        <p className={styles.subtitle}>{t('ranking.subtitle')}</p>
+      </header>
 
       {rankingsQuery.isPending ? (
         <p className={styles.loading} role="status">

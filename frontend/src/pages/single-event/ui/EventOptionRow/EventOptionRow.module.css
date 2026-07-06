@@ -1,74 +1,172 @@
 .row {
-  display: flex;
-  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+  display: grid;
   align-items: center;
-  gap: var(--space-sm);
+  column-gap: var(--space-md);
   min-width: 0;
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--color-border);
+  min-height: 68px;
+  padding: var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
+}
+
+.withBias {
+  grid-template-columns: minmax(14rem, 1fr) 9.5rem 7.5rem 7.5rem minmax(10rem, 13rem);
+}
+
+.rawOnly {
+  grid-template-columns: minmax(14rem, 1fr) 9.5rem 7.5rem;
+}
+
+.row:hover {
+  background-color: var(--color-glass-strong);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-card);
+  transform: translateX(2px);
 }
 
 .optionName {
-  flex: 1 1 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.optionText {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
   color: var(--color-text);
 }
 
+.probabilityTrack {
+  display: block;
+  width: min(100%, 240px);
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-track);
+  box-shadow: var(--shadow-track-inset);
+}
+
+.probabilityFill {
+  display: block;
+  min-width: 4px;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bias-track);
+}
+
 .metrics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
+  display: contents;
   margin: 0;
 }
 
 .metric {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
+  text-align: right;
 }
 
 .metricLabel {
+  display: none;
   font-size: 0.6875rem;
-  color: var(--color-muted);
+  letter-spacing: 0.02em;
+  color: var(--color-subtle);
 }
 
 .metricValue {
   margin: 0;
   font-family: var(--font-mono);
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  letter-spacing: 0;
   color: var(--color-text);
 }
 
 .biasLabel {
-  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 100%;
+  min-height: 34px;
   max-width: 100%;
-  padding: 2px 10px;
+  padding: 5px 12px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
+  background-color: var(--color-glass-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   color: var(--color-text);
   overflow-wrap: anywhere;
 }
 
-.marker {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
-  overflow-wrap: anywhere;
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+    row-gap: var(--space-sm);
+    align-items: flex-start;
+    min-height: 0;
+    padding: var(--space-md) 0;
+    border-color: transparent;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+  }
+
+  .row:last-child {
+    border-bottom: none;
+  }
+
+  .row:hover {
+    background-color: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .metrics {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-md);
+  }
+
+  .rawOnly .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric {
+    text-align: left;
+  }
+
+  .metricLabel {
+    display: block;
+  }
+
+  .biasLabel {
+    justify-self: start;
+    width: auto;
+  }
 }
 
-.excluded {
-  background-color: var(--color-warn-soft);
-  color: var(--color-warn-text);
+@media (max-width: 430px) {
+  .metrics,
+  .rawOnly .metrics {
+    grid-template-columns: 1fr;
+  }
 }

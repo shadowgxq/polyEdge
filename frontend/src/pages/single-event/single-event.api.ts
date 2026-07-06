@@ -22,6 +22,11 @@ function toOptionAnalysis(dto: OptionAnalysisDto): OptionAnalysis {
     biasScore: dto.bias_score,
     label: dto.label,
     excluded: dto.excluded,
+    pool: dto.pool ?? null,
+    momentum: dto.momentum ?? null,
+    fragility: dto.fragility ?? null,
+    overheatScore: dto.overheat_score ?? null,
+    watchScore: dto.watch_score ?? null,
   };
 }
 

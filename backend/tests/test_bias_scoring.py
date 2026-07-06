@@ -12,7 +12,9 @@ import pytest
 
 from app.services.bias_scoring import (
     BiasParams,
+    CATEGORY_LABELS,
     EventInput,
+    Pool,
     compute_event_bias,
     norm,
     rank_options,
@@ -133,40 +135,366 @@ def test_configurable_params_do_not_change_structure():
 
 
 def test_ranking_buckets_mutually_exclusive():
-    """多事件排行：三档互斥无交集、无遗漏，榜单排序且保留事件归属。"""
+    """多事件排行：三榜按诚实标签互斥分档，并按对应复合分排序。"""
     events = [
         EventInput(
-            event_id="evt-1",
+            event_id="overheat",
             options=[
-                {"option_id": "A", "price": 50, "volume": 65, "traders": None},
-                {"option_id": "B", "price": 50, "volume": 35, "traders": None},
+                {
+                    "option_id": "A",
+                    "price": 0.45,
+                    "volume": 100,
+                    "liquidity": 50,
+                    "volume24hr": 900,
+                    "volume1wk": 700,
+                    "one_day_price_change": 0.10,
+                    "spread": 0.04,
+                    "traders": None,
+                },
+                {
+                    "option_id": "B",
+                    "price": 0.35,
+                    "volume": 100,
+                    "liquidity": 50,
+                    "volume24hr": 50,
+                    "volume1wk": 700,
+                    "spread": 0.001,
+                    "traders": None,
+                },
+                {
+                    "option_id": "C",
+                    "price": 0.20,
+                    "volume": 100,
+                    "liquidity": 50,
+                    "volume24hr": 50,
+                    "volume1wk": 700,
+                    "spread": 0.001,
+                    "traders": None,
+                },
             ],
         ),
         EventInput(
-            event_id="evt-2",
+            event_id="longshot",
             options=[
-                {"option_id": "C", "price": 50, "volume": 55, "traders": None},
-                {"option_id": "D", "price": 50, "volume": 45, "traders": None},
+                {
+                    "option_id": "A",
+                    "price": 0.45,
+                    "volume": 1000,
+                    "liquidity": 100,
+                    "volume24hr": 500,
+                    "volume1wk": 3500,
+                    "traders": None,
+                },
+                {
+                    "option_id": "B",
+                    "price": 0.35,
+                    "volume": 1000,
+                    "liquidity": 100,
+                    "volume24hr": 500,
+                    "volume1wk": 3500,
+                    "traders": None,
+                },
+                {
+                    "option_id": "C",
+                    "price": 0.15,
+                    "volume": 1000,
+                    "liquidity": 100,
+                    "volume24hr": 500,
+                    "volume1wk": 3500,
+                    "traders": None,
+                },
+                {
+                    "option_id": "D",
+                    "price": 0.05,
+                    "volume": 100,
+                    "liquidity": 3000,
+                    "volume24hr": 1,
+                    "volume1wk": 7,
+                    "one_day_price_change": 0.02,
+                    "spread": 0.0005,
+                    "traders": None,
+                },
             ],
         ),
     ]
-    params = BiasParams(w_vol=1, w_liq=0, w_24h=0, w_turn=0)
-    ranking = rank_options(events, params)
+    ranking = rank_options(events)
 
     all_items = ranking.bubble_risk + ranking.value_opportunity + ranking.fairly_priced
-    ids = [item.option_id for item in all_items]
-    assert sorted(ids) == ["A", "B", "C", "D"]  # 无遗漏
-    assert len(ids) == len(set(ids))  # 无重复（互斥）
+    keys = [(item.event_id, item.option_id) for item in all_items]
+    assert len(keys) == 7  # 无遗漏
+    assert len(keys) == len(set(keys))  # 无重复（互斥）
 
-    # 泡沫榜降序、冷门榜升序
-    assert [i.bias for i in ranking.bubble_risk] == sorted(
-        (i.bias for i in ranking.bubble_risk), reverse=True
+    assert {item.category for item in ranking.bubble_risk} == {
+        BiasCategory.OVERHEATED_FAVORITE
+    }
+    assert {item.category for item in ranking.value_opportunity} == {
+        BiasCategory.LOW_ATTENTION_FAVORITE,
+        BiasCategory.WATCH_LONGSHOT,
+    }
+    assert all(
+        item.category in {BiasCategory.CONSENSUS_FAVORITE, BiasCategory.CONTENDER}
+        for item in ranking.fairly_priced
     )
-    assert [i.bias for i in ranking.value_opportunity] == sorted(
-        i.bias for i in ranking.value_opportunity
+    assert [i.overheat_score for i in ranking.bubble_risk] == sorted(
+        (i.overheat_score for i in ranking.bubble_risk), reverse=True
+    )
+    assert [
+        (i.watch_score or 0.0, abs(i.bias)) for i in ranking.value_opportunity
+    ] == sorted(
+        ((i.watch_score or 0.0, abs(i.bias)) for i in ranking.value_opportunity),
+        reverse=True,
     )
     # 事件归属保留
-    assert all(item.event_id in {"evt-1", "evt-2"} for item in all_items)
+    assert all(item.event_id in {"overheat", "longshot"} for item in all_items)
+
+
+def test_favorite_low_attention_not_classified_as_longshot():
+    """头号热门即使关注不足，也只能是低关注热门，不得进入冷门池。"""
+    event = EventInput(
+        event_id="world-cup-winner",
+        options=[
+            {
+                "option_id": "France",
+                "price": 0.3275,
+                "volume": 96_339_712.96,
+                "liquidity": 8_168_879.65,
+                "volume24hr": 1_780_159.15,
+                "volume1wk": 17_415_683.98,
+                "one_day_price_change": -0.026,
+                "spread": 0.001,
+                "traders": None,
+            },
+            {
+                "option_id": "Argentina",
+                "price": 0.1665,
+                "volume": 101_950_515.19,
+                "liquidity": 7_775_079.47,
+                "volume24hr": 2_082_873.40,
+                "volume1wk": 19_781_962.46,
+                "one_day_price_change": -0.001,
+                "spread": 0.001,
+                "traders": None,
+            },
+            {
+                "option_id": "England",
+                "price": 0.1405,
+                "volume": 83_512_424.93,
+                "liquidity": 5_942_656.05,
+                "volume24hr": 4_902_293.33,
+                "volume1wk": 21_272_459.04,
+                "one_day_price_change": 0.069,
+                "spread": 0.001,
+                "traders": None,
+            },
+            {
+                "option_id": "Spain",
+                "price": 0.1275,
+                "volume": 87_179_312.71,
+                "liquidity": 6_912_131.78,
+                "volume24hr": 2_144_168.32,
+                "volume1wk": 17_258_330.64,
+                "one_day_price_change": 0.004,
+                "spread": 0.001,
+                "traders": None,
+            },
+        ],
+    )
+    result = compute_event_bias(event)
+    france = next(o for o in result.options if o.option_id == "France")
+
+    assert france.pool is Pool.FAVORITE
+    assert france.category is BiasCategory.LOW_ATTENTION_FAVORITE
+    assert france.label_zh == "低关注热门"
+    assert "冷门" not in france.label_zh
+    assert france.watch_score is None
+
+
+def test_favorite_overheat_uses_multi_signal_score():
+    """热门池过热由 attention residual + 动量 / 脆弱 / 加速综合触发。"""
+    event = EventInput(
+        event_id="favorite-overheat",
+        options=[
+            {
+                "option_id": "A",
+                "price": 0.45,
+                "volume": 100,
+                "liquidity": 50,
+                "volume24hr": 900,
+                "volume1wk": 700,
+                "one_day_price_change": 0.10,
+                "spread": 0.04,
+                "traders": None,
+            },
+            {
+                "option_id": "B",
+                "price": 0.35,
+                "volume": 100,
+                "liquidity": 50,
+                "volume24hr": 50,
+                "volume1wk": 700,
+                "spread": 0.001,
+                "traders": None,
+            },
+            {
+                "option_id": "C",
+                "price": 0.20,
+                "volume": 100,
+                "liquidity": 50,
+                "volume24hr": 50,
+                "volume1wk": 700,
+                "spread": 0.001,
+                "traders": None,
+            },
+        ],
+    )
+    a = compute_event_bias(event).options[0]
+
+    assert a.pool is Pool.FAVORITE
+    assert a.category is BiasCategory.OVERHEATED_FAVORITE
+    assert a.overheat_score is not None and a.overheat_score >= 60
+
+
+def test_longshot_hyped_and_watch_gates_are_distinct():
+    """冷门池内，拥挤优先判被炒作；不拥挤但流动性健康才判观察冷门。"""
+    hyped = EventInput(
+        event_id="hyped",
+        options=[
+            {
+                "option_id": "A",
+                "price": 0.45,
+                "volume": 100,
+                "liquidity": 500,
+                "volume24hr": 100,
+                "volume1wk": 700,
+                "traders": None,
+            },
+            {
+                "option_id": "B",
+                "price": 0.35,
+                "volume": 100,
+                "liquidity": 500,
+                "volume24hr": 100,
+                "volume1wk": 700,
+                "traders": None,
+            },
+            {
+                "option_id": "C",
+                "price": 0.15,
+                "volume": 100,
+                "liquidity": 500,
+                "volume24hr": 100,
+                "volume1wk": 700,
+                "traders": None,
+            },
+            {
+                "option_id": "D",
+                "price": 0.05,
+                "volume": 100,
+                "liquidity": 500,
+                "volume24hr": 900,
+                "volume1wk": 700,
+                "one_day_price_change": 0.08,
+                "spread": 0.001,
+                "traders": None,
+            },
+        ],
+    )
+    watch = EventInput(
+        event_id="watch",
+        options=[
+            {
+                "option_id": "A",
+                "price": 0.45,
+                "volume": 1000,
+                "liquidity": 100,
+                "volume24hr": 500,
+                "volume1wk": 3500,
+                "traders": None,
+            },
+            {
+                "option_id": "B",
+                "price": 0.35,
+                "volume": 1000,
+                "liquidity": 100,
+                "volume24hr": 500,
+                "volume1wk": 3500,
+                "traders": None,
+            },
+            {
+                "option_id": "C",
+                "price": 0.15,
+                "volume": 1000,
+                "liquidity": 100,
+                "volume24hr": 500,
+                "volume1wk": 3500,
+                "traders": None,
+            },
+            {
+                "option_id": "D",
+                "price": 0.05,
+                "volume": 100,
+                "liquidity": 3000,
+                "volume24hr": 1,
+                "volume1wk": 7,
+                "one_day_price_change": 0.02,
+                "spread": 0.0005,
+                "traders": None,
+            },
+        ],
+    )
+
+    hyped_d = next(o for o in compute_event_bias(hyped).options if o.option_id == "D")
+    watch_d = next(o for o in compute_event_bias(watch).options if o.option_id == "D")
+
+    assert hyped_d.pool is Pool.LONGSHOT
+    assert hyped_d.category is BiasCategory.HYPED_LONGSHOT
+    assert hyped_d.watch_score is not None and hyped_d.watch_score >= 55
+    assert watch_d.pool is Pool.LONGSHOT
+    assert watch_d.bias is not None and watch_d.bias < 15
+    assert watch_d.category is BiasCategory.WATCH_LONGSHOT
+    assert watch_d.watch_score is not None and watch_d.watch_score >= 55
+
+
+def test_missing_multisignal_fields_fallback_to_neutral():
+    """白拿字段缺失时，多信号按 0 兜底，不产生 NaN 或异常分。"""
+    event = EventInput(
+        event_id="missing-fields",
+        options=[
+            {
+                "option_id": "A",
+                "price": 0.5,
+                "volume": 100,
+                "liquidity": 100,
+                "volume24hr": 100,
+                "traders": None,
+            },
+            {
+                "option_id": "B",
+                "price": 0.5,
+                "volume": 100,
+                "liquidity": 100,
+                "volume24hr": 100,
+                "traders": None,
+            },
+        ],
+    )
+    result = compute_event_bias(event)
+
+    assert result.applicable
+    for option in result.options:
+        assert option.momentum == 0.0
+        assert option.fragility == 0.0
+        assert option.overheat_score == 0.0
+        assert option.category is BiasCategory.CONSENSUS_FAVORITE
+        assert option.watch_score is None
+
+
+def test_category_labels_do_not_claim_value_mispricing():
+    """新旧标签文案都不宣称相对真实概率的高估/低估。"""
+    forbidden = ("高估", "低估", "冷门机会", "undervalued", "overvalued", "fair value")
+    for labels in CATEGORY_LABELS.values():
+        text = f"{labels['zh']} {labels['en']}".lower()
+        assert all(term not in text for term in forbidden)
 
 
 def test_smoke_realistic_no_nan_no_raise():

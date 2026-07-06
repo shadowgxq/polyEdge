@@ -1,7 +1,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-md);
   min-width: 0;
 }
 
@@ -16,8 +16,10 @@
 
 .heading {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0;
   color: var(--color-text);
 }
 
@@ -25,19 +27,26 @@
   display: inline-flex;
   gap: var(--space-2xs);
   padding: var(--space-2xs);
-  background-color: var(--color-brand-soft);
-  border-radius: var(--radius-pill);
+  background-color: var(--color-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--color-glass-hi);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass);
 }
 
 .sortButton {
-  padding: 4px 12px;
+  padding: 5px 14px;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   background-color: transparent;
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
 }
 
 .sortButton:hover {
@@ -45,9 +54,9 @@
 }
 
 .sortButton[aria-pressed='true'] {
-  background-color: var(--color-surface);
-  color: var(--color-brand);
-  box-shadow: var(--shadow-card);
+  background-color: var(--color-brand);
+  color: var(--color-brand-ink);
+  box-shadow: var(--shadow-pop);
 }
 
 .sortButton:focus-visible {
@@ -55,10 +64,89 @@
   outline-offset: 2px;
 }
 
+/* 选项表：整块玻璃卡，行间发丝线分隔。 */
 .list {
+  position: relative;
   display: flex;
   flex-direction: column;
   margin: 0;
-  padding: 0;
+  padding: var(--space-sm);
+  overflow: hidden;
   list-style: none;
+  background-color: var(--color-glass);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--color-glass-hi);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass);
+}
+
+.list::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--bias-track);
+  opacity: 0.72;
+}
+
+.tableHeader {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) 9.5rem 7.5rem 7.5rem minmax(10rem, 13rem);
+  column-gap: var(--space-md);
+  align-items: center;
+  min-width: 0;
+  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+  color: var(--color-subtle);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.rawTableHeader {
+  composes: tableHeader;
+  grid-template-columns: minmax(14rem, 1fr) 9.5rem 7.5rem;
+}
+
+.tableHeader span,
+.rawTableHeader span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tableHeader span:not(:first-child),
+.rawTableHeader span:not(:first-child) {
+  text-align: right;
+}
+
+.tableHeader span:last-child {
+  text-align: center;
+}
+
+.rawTableHeader span:last-child {
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .sort {
+    width: 100%;
+  }
+
+  .sortButton {
+    flex: 1 1 0;
+  }
+
+  .list {
+    padding: var(--space-xs) var(--space-md);
+  }
+
+  .tableHeader,
+  .rawTableHeader {
+    display: none;
+  }
 }

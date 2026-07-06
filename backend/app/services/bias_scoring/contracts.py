@@ -34,6 +34,16 @@ class OptionInput(BaseModel):
     depth: float | None = Field(
         default=None, description="订单簿深度（可选，MVP 默认不参与）"
     )
+    # 多信号扩展输入（bias-multi-signal，零新请求白拿；缺失→None，计算按 0 兜底）。
+    one_day_price_change: float | None = Field(
+        default=None, description="单日价格变化，动量信号源（bias-algorithm §3）"
+    )
+    spread: float | None = Field(
+        default=None, description="买卖价差，流动性脆弱度信号源"
+    )
+    volume1wk: float | None = Field(
+        default=None, description="近一周成交量，成交加速信号源"
+    )
 
 
 class EventInput(BaseModel):

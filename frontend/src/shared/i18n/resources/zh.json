@@ -15,9 +15,9 @@
   },
   "bias": {
     "label": {
-      "hot": "高热度·泡沫风险",
-      "cold": "低热度·冷门机会",
-      "fair": "合理"
+      "hot": "高关注·拥挤信号",
+      "cold": "低关注·观察信号",
+      "fair": "结构正常"
     },
     "score": "偏差评分"
   },
@@ -49,16 +49,20 @@
     "backToList": "返回事件列表",
     "optionsHeading": "选项",
     "sortLabel": "按偏差评分排序",
-    "sortBiasDesc": "泡沫优先",
-    "sortBiasAsc": "冷门优先",
+    "sortBiasDesc": "过热优先",
+    "sortBiasAsc": "观察优先",
+    "optionColumn": "选项",
+    "signalColumn": "信号",
     "degradedTradeOnly": "纯交易热度",
     "degradedTradeOnlyHint": "社交数据不足，偏差仅反映交易热度。",
     "notApplicable": "不适用偏差分析",
     "notApplicableHint": "仅展示原始选项数据。",
     "excluded": "已排除",
+    "commentCount_zero": "暂无讨论",
     "commentCount_other": "{{count}} 条讨论"
   },
   "events": {
+    "subtitle": "一眼看清热门事件里被追捧与被冷落的选项",
     "category": {
       "label": "事件分类",
       "hot": "热门",
@@ -66,7 +70,8 @@
     },
     "card": {
       "notApplicable": "不适用偏差分析",
-      "topBiasOption": "偏差最高：{{optionName}}"
+      "topBiasOption": "热度定价偏差最大：{{optionName}}",
+      "moreOptions": "+{{count}} 更多"
     },
     "list": {
       "loading": "正在加载事件…",
@@ -94,19 +99,20 @@
     }
   },
   "ranking": {
+    "subtitle": "过热、观察、合理——三档分明",
     "loading": "正在加载偏差排行…",
     "board": {
       "label": "排行榜单",
       "bubble": {
-        "title": "泡沫风险榜",
-        "empty": "暂无泡沫风险选项"
+        "title": "过热榜",
+        "empty": "暂无过热选项"
       },
       "underhyped": {
-        "title": "冷门机会榜",
-        "empty": "暂无冷门机会选项"
+        "title": "观察榜",
+        "empty": "暂无观察选项"
       },
       "fair": {
-        "title": "合理列表",
+        "title": "合理",
         "empty": "暂无合理选项"
       }
     },
@@ -141,7 +147,8 @@
       "copyImageSuccess": "图片已复制到剪贴板。",
       "copyImageError": "图片复制失败，请改用下载。",
       "copyLinkSuccess": "链接已复制。",
-      "copyLinkError": "链接复制失败。"
+      "copyLinkError": "链接复制失败。",
+      "uploadError": "图片链接准备失败，请改用下载海报。"
     },
     "intent": {
       "label": "分享到",
@@ -154,10 +161,13 @@
     },
     "poster": {
       "eyebrow": "偏差结果",
+      "kicker": "Market mispricing signal",
       "coreOption": "核心选项",
+      "impliedProbability": "隐含概率",
       "biasScore": "偏差评分",
       "source": "来源：Polymarket",
-      "generatedTime": "海报生成时间：{{time}}"
+      "generatedTime": "海报生成时间：{{time}}",
+      "watermark": "polyEdge 发现"
     }
   },
   "placeholder": {

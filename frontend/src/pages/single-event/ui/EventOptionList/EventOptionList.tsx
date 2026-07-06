@@ -24,25 +24,22 @@ export type EventOptionListProps = {
 /**
  * 单事件选项列表区块（single-event-detail，PRD §4.3、AC-3、design D5）。
  *
- * 承载展示层排序（按偏差评分重排，不改任一数值）；被排除选项固定置底且不参与排序，
- * `applicable=false` 时不提供排序。逐项经 `EventOptionRow` 渲染。
+ * 承载展示层排序（按偏差评分重排，不改任一数值）；`excluded=true` 的选项在进入本组件前
+ * 已被过滤，`applicable=false` 时不提供排序。逐项经 `EventOptionRow` 渲染。
  */
 export function EventOptionList({ options, applicable }: EventOptionListProps) {
   const { t } = useTranslation();
   const [sortDirection, setSortDirection] = useState<BiasSortDirection>('biasDesc');
 
   const orderedOptions = useMemo(() => {
-    const active = options.filter((option) => !option.excluded);
-    const excluded = options.filter((option) => option.excluded);
-
-    const sortedActive =
+    const sortedOptions =
       applicable
-        ? [...active].sort((a, b) =>
+        ? [...options].sort((a, b) =>
             sortDirection === 'biasDesc' ? b.biasScore - a.biasScore : a.biasScore - b.biasScore,
           )
-        : active;
+        : options;
 
-    return [...sortedActive, ...excluded];
+    return sortedOptions;
   }, [options, applicable, sortDirection]);
 
   return (
@@ -67,6 +64,20 @@ export function EventOptionList({ options, applicable }: EventOptionListProps) {
       </header>
 
       <ul className={styles.list}>
+        <li
+          className={applicable ? styles.tableHeader : styles.rawTableHeader}
+          aria-hidden="true"
+        >
+          <span>{t('detail.optionColumn')}</span>
+          <span>{t('metrics.impliedProbability')}</span>
+          <span>{t('metrics.heat')}</span>
+          {applicable ? (
+            <>
+              <span>{t('metrics.biasScore')}</span>
+              <span>{t('detail.signalColumn')}</span>
+            </>
+          ) : null}
+        </li>
         {orderedOptions.map((option) => (
           <EventOptionRow key={option.name} option={option} applicable={applicable} />
         ))}

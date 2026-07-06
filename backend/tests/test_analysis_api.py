@@ -38,8 +38,34 @@ def _option(outcome, price, volume, traders=100):
     )
 
 
+def _signal_option(
+    outcome,
+    price,
+    volume,
+    *,
+    liquidity=None,
+    volume24hr=None,
+    volume1wk=None,
+    one_day_price_change=None,
+    spread=None,
+    traders=None,
+):
+    return MarketOption(
+        outcome=outcome,
+        price=price,
+        price_source=PriceSource.OUTCOME_PRICES_FALLBACK,
+        volume=volume,
+        liquidity=liquidity if liquidity is not None else volume,
+        volume24hr=volume24hr if volume24hr is not None else volume,
+        volume1wk=volume1wk,
+        one_day_price_change=one_day_price_change,
+        spread=spread,
+        traders=traders,
+    )
+
+
 def _skewed_event(slug="hot-event", title="Hot Event"):
-    """Yes 强热度低估价 → 泡沫(+)，No 反向 → 冷门(-)。"""
+    """Yes 交易关注高于价格份额，No 反向。"""
     return MarketEvent(
         slug=slug,
         title=title,
@@ -60,6 +86,123 @@ def _fair_event(slug="fair-event", title="Fair Event"):
         options=[
             _option("Yes", 0.5, 5000, traders=500),
             _option("No", 0.5, 5000, traders=500),
+        ],
+        data_snapshot_at=_SNAPSHOT,
+    )
+
+
+def _overheat_event(slug="overheat-event", title="Overheat Event"):
+    return MarketEvent(
+        slug=slug,
+        title=title,
+        options=[
+            _signal_option(
+                "A",
+                0.45,
+                100,
+                liquidity=50,
+                volume24hr=900,
+                volume1wk=700,
+                one_day_price_change=0.10,
+                spread=0.04,
+            ),
+            _signal_option(
+                "B",
+                0.35,
+                100,
+                liquidity=50,
+                volume24hr=50,
+                volume1wk=700,
+                spread=0.001,
+            ),
+            _signal_option(
+                "C",
+                0.20,
+                100,
+                liquidity=50,
+                volume24hr=50,
+                volume1wk=700,
+                spread=0.001,
+            ),
+        ],
+        data_snapshot_at=_SNAPSHOT,
+    )
+
+
+def _watch_event(slug="watch-event", title="Watch Event"):
+    return MarketEvent(
+        slug=slug,
+        title=title,
+        options=[
+            _signal_option(
+                "A", 0.45, 1000, liquidity=100, volume24hr=500, volume1wk=3500
+            ),
+            _signal_option(
+                "B", 0.35, 1000, liquidity=100, volume24hr=500, volume1wk=3500
+            ),
+            _signal_option(
+                "C", 0.15, 1000, liquidity=100, volume24hr=500, volume1wk=3500
+            ),
+            _signal_option(
+                "D",
+                0.05,
+                100,
+                liquidity=3000,
+                volume24hr=1,
+                volume1wk=7,
+                one_day_price_change=0.02,
+                spread=0.0005,
+            ),
+        ],
+        data_snapshot_at=_SNAPSHOT,
+    )
+
+
+def _world_cup_low_attention_favorite_event():
+    return MarketEvent(
+        slug="world-cup-winner",
+        title="World Cup Winner",
+        options=[
+            _signal_option(
+                "France",
+                0.3275,
+                96_339_712.96,
+                liquidity=8_168_879.65,
+                volume24hr=1_780_159.15,
+                volume1wk=17_415_683.98,
+                one_day_price_change=-0.026,
+                spread=0.001,
+            ),
+            _signal_option(
+                "Argentina",
+                0.1665,
+                101_950_515.19,
+                liquidity=7_775_079.47,
+                volume24hr=2_082_873.40,
+                volume1wk=19_781_962.46,
+                one_day_price_change=-0.001,
+                spread=0.001,
+            ),
+            _signal_option(
+                "England",
+                0.1405,
+                83_512_424.93,
+                liquidity=5_942_656.05,
+                volume24hr=4_902_293.33,
+                volume1wk=21_272_459.04,
+                one_day_price_change=0.069,
+                spread=0.001,
+            ),
+            _signal_option(
+                "Spain",
+                0.1275,
+                87_179_312.71,
+                liquidity=6_912_131.78,
+                volume24hr=2_144_168.32,
+                volume1wk=17_258_330.64,
+                one_day_price_change=0.004,
+                spread=0.001,
+            ),
         ],
         data_snapshot_at=_SNAPSHOT,
     )
@@ -169,6 +312,18 @@ def test_event_list_overview_label_takes_max_abs_bias_option():
     assert card.overview_label is not None
 
 
+def test_event_list_favorite_low_attention_overview_is_not_longshot():
+    service = AnalysisService(
+        FakeMarketData(popular=[_world_cup_low_attention_favorite_event()])
+    )
+    card = service.get_event_list(EventCategory.HOT, page=1, page_size=20).items[0]
+
+    assert card.overview_option_name == "France"
+    assert card.overview_label is not None
+    assert card.overview_label.zh == "低关注热门"
+    assert "冷门" not in card.overview_label.zh
+
+
 def test_event_list_not_applicable_card_has_null_label():
     event = MarketEvent(
         slug="na",
@@ -196,6 +351,25 @@ def test_event_list_pagination_has_more():
     result = service.get_event_list(EventCategory.HOT, page=1, page_size=2)
     assert len(result.items) == 2
     assert result.has_more is True
+
+
+def test_event_card_previews_top_options_by_probability():
+    # 多候选事件：卡片按概率降序只露 TopN 预览，options_total 记全量供「+N 更多」。
+    options = [_option(f"Team{i}", price=i / 100, volume=1000 - i) for i in range(12)]
+    event = MarketEvent(
+        slug="many",
+        title="Many candidates",
+        options=options,
+        data_snapshot_at=_SNAPSHOT,
+    )
+    service = AnalysisService(FakeMarketData(popular=[event]))
+    card = service.get_event_list(EventCategory.HOT, 1, 20).items[0]
+
+    assert card.options_total == 12
+    assert len(card.options) == 5  # event_card_option_preview 默认 5
+    prices = [option.price for option in card.options]
+    assert prices == sorted(prices, reverse=True)  # 概率降序
+    assert card.options[0].name == "Team11"  # 概率最高者置顶
 
 
 # ---------------- slug 解析 ----------------
@@ -254,7 +428,9 @@ def test_search_no_match_returns_empty_with_scope():
 
 
 def test_rankings_boards_mutually_exclusive_and_sorted():
-    service = AnalysisService(FakeMarketData(popular=[_skewed_event(), _fair_event()]))
+    service = AnalysisService(
+        FakeMarketData(popular=[_overheat_event(), _watch_event()])
+    )
     boards = service.get_rankings(EventCategory.HOT, top_n=10)
 
     keys = [
@@ -263,13 +439,18 @@ def test_rankings_boards_mutually_exclusive_and_sorted():
         for i in board
     ]
     assert len(keys) == len(set(keys))  # 无交集
-    assert all(i.bias_score > 0 for i in boards.bubble)
-    assert all(i.bias_score < 0 for i in boards.underhyped)
-    # 泡沫降序、冷门升序
+    assert {i.label.zh for i in boards.bubble} == {"过热热门"}
+    assert {i.label.zh for i in boards.underhyped} == {"观察冷门", "低关注热门"}
+    assert all(i.label.zh == "共识热门" for i in boards.fair)
+    # 过热榜按 overheat_score 降序，观察榜按 watch_score/|bias| 降序。
     assert boards.bubble == sorted(
-        boards.bubble, key=lambda i: i.bias_score, reverse=True
+        boards.bubble, key=lambda i: i.overheat_score or 0.0, reverse=True
     )
-    assert boards.underhyped == sorted(boards.underhyped, key=lambda i: i.bias_score)
+    assert boards.underhyped == sorted(
+        boards.underhyped,
+        key=lambda i: (i.watch_score or 0.0, abs(i.bias_score)),
+        reverse=True,
+    )
 
 
 def test_rankings_topn_truncation():
@@ -298,11 +479,26 @@ def _override_analysis(fake):
     return _factory
 
 
+class _NoopRefreshScheduler:
+    def schedule_event(self, background_tasks, slug):
+        return None
+
+    def schedule_list(self, background_tasks, name):
+        return None
+
+
+def _override_refresh_scheduler():
+    return _NoopRefreshScheduler()
+
+
 def test_api_upstream_unavailable_maps_to_error_state(client):
     from main import app
 
     app.dependency_overrides[events_route.get_analysis_service] = _override_analysis(
         FakeMarketData(fail=True)
+    )
+    app.dependency_overrides[events_route.get_market_refresh_scheduler] = (
+        _override_refresh_scheduler
     )
     resp = client.get("/api/v1/events/anything")
     assert resp.status_code == 503
@@ -314,6 +510,9 @@ def test_api_event_list_success_envelope(client):
 
     app.dependency_overrides[events_route.get_analysis_service] = _override_analysis(
         FakeMarketData(popular=[_skewed_event()])
+    )
+    app.dependency_overrides[events_route.get_market_refresh_scheduler] = (
+        _override_refresh_scheduler
     )
     resp = client.get("/api/v1/events?category=hot")
     assert resp.status_code == 200
@@ -328,6 +527,9 @@ def test_api_rankings_success_envelope(client):
     app.dependency_overrides[rankings_route.get_analysis_service] = _override_analysis(
         FakeMarketData(popular=[_skewed_event()])
     )
+    app.dependency_overrides[rankings_route.get_market_refresh_scheduler] = (
+        _override_refresh_scheduler
+    )
     resp = client.get("/api/v1/rankings?category=hot")
     assert resp.status_code == 200
     assert resp.json()["code"] == 0
@@ -339,6 +541,9 @@ def test_api_realtime_rate_limit_exceeds_returns_429(client, fake_redis, monkeyp
     monkeypatch.setattr(rate_limit_module, "redis_client", fake_redis)
     app.dependency_overrides[events_route.get_analysis_service] = _override_analysis(
         FakeMarketData(popular=[_skewed_event(title="World")])
+    )
+    app.dependency_overrides[events_route.get_market_refresh_scheduler] = (
+        _override_refresh_scheduler
     )
     app.dependency_overrides[events_route.get_rate_limit_service] = lambda: (
         RateLimitService(window_seconds=60, max_requests=1)
@@ -363,6 +568,9 @@ def test_api_realtime_rate_limit_fail_open_on_redis_error(client, monkeypatch):
     monkeypatch.setattr(rate_limit_module, "redis_client", BrokenRedis())
     app.dependency_overrides[events_route.get_analysis_service] = _override_analysis(
         FakeMarketData(popular=[_skewed_event(title="World")])
+    )
+    app.dependency_overrides[events_route.get_market_refresh_scheduler] = (
+        _override_refresh_scheduler
     )
     app.dependency_overrides[events_route.get_rate_limit_service] = lambda: (
         RateLimitService(window_seconds=60, max_requests=1)

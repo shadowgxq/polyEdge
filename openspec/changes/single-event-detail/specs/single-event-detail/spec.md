@@ -30,12 +30,12 @@
 
 ### Requirement: 纯交易热度退化标注
 
-系统 SHALL 在明细接口返回 `degraded_trade_only=true`（全事件退化为纯交易热度）时，于明细页明确标注「纯交易热度」降级态，其偏差结果仍按接口返回的退化口径展示，SHALL NOT 表现为空白或静默省略。降级文案经 i18n 且不翻译市场内容。来源：PRD §5.2、bias-algorithm §3.5、AC-5。
+系统 SHALL 在明细接口返回 `degraded_trade_only=true`（全事件退化为纯交易热度）时，继续按接口返回的退化口径展示各选项偏差结果；前端消费该字段但 SHALL NOT 额外渲染事件级提示条。来源：PRD §5.2、bias-algorithm §3.5、AC-5。
 
 #### Scenario: 全事件退化标注
 
 - **WHEN** 明细接口返回 `degraded_trade_only=true`
-- **THEN** 明细页展示「纯交易热度」降级标注，并按接口返回的退化口径展示各选项偏差
+- **THEN** 明细页不额外展示事件级提示，并按接口返回的退化口径展示各选项偏差
 
 ### Requirement: 不适用偏差分析标注
 
@@ -46,14 +46,14 @@
 - **WHEN** 明细接口返回 `applicable=false`
 - **THEN** 明细页标注「不适用偏差分析」并仅展示原始选项数据，不呈现偏差评分与三分类标签
 
-### Requirement: 被排除选项标注
+### Requirement: 被排除选项过滤
 
-系统 SHALL 在某选项 `excluded=true`（价格全为 0 或数据缺失被排除出偏差计算）时，于列表中标注该选项已排除，其余有效选项的偏差按接口返回的重归一结果展示；被排除选项 SHALL NOT 参与排序权重且不呈现偏差标签。来源：PRD §5.2、bias-algorithm §6。
+系统 SHALL 在某选项 `excluded=true`（价格全为 0 或数据缺失被排除出偏差计算）时，不在明细列表中展示该选项；其余有效选项的偏差按接口返回的重归一结果展示。被排除选项 SHALL NOT 参与排序权重且不呈现偏差标签。来源：PRD §5.2、bias-algorithm §6。
 
-#### Scenario: 选项已排除标注
+#### Scenario: 选项已排除过滤
 
 - **WHEN** 明细接口某选项返回 `excluded=true`
-- **THEN** 该选项行标注「已排除」且不呈现偏差评分与三分类标签，其余有效选项正常呈现接口返回的偏差结果
+- **THEN** 明细页不渲染该选项行，其余有效选项正常呈现接口返回的偏差结果
 
 ### Requirement: 事件级关注度与数据快照时间
 

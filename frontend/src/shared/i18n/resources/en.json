@@ -15,9 +15,9 @@
   },
   "bias": {
     "label": {
-      "hot": "Overheated · Bubble Risk",
-      "cold": "Underhyped · Value Opportunity",
-      "fair": "Fairly Priced"
+      "hot": "Crowded Attention Signal",
+      "cold": "Low-attention Watch Signal",
+      "fair": "Normal Structure"
     },
     "score": "Bias score"
   },
@@ -49,17 +49,21 @@
     "backToList": "Back to events",
     "optionsHeading": "Options",
     "sortLabel": "Sort by bias score",
-    "sortBiasDesc": "Bubble first",
-    "sortBiasAsc": "Value first",
+    "sortBiasDesc": "Overheated first",
+    "sortBiasAsc": "Watch first",
+    "optionColumn": "Option",
+    "signalColumn": "Signal",
     "degradedTradeOnly": "Trade heat only",
     "degradedTradeOnlyHint": "Social data is insufficient; bias reflects trading heat only.",
     "notApplicable": "Bias analysis not applicable",
     "notApplicableHint": "Showing raw option data only.",
     "excluded": "Excluded",
+    "commentCount_zero": "No comments yet",
     "commentCount_one": "{{count}} comment",
     "commentCount_other": "{{count}} comments"
   },
   "events": {
+    "subtitle": "See which options in trending markets are crowded or quietly priced",
     "category": {
       "label": "Event category",
       "hot": "Hot",
@@ -67,7 +71,8 @@
     },
     "card": {
       "notApplicable": "Bias analysis not applicable",
-      "topBiasOption": "Highest bias: {{optionName}}"
+      "topBiasOption": "Largest price–heat gap: {{optionName}}",
+      "moreOptions": "+{{count}} more"
     },
     "list": {
       "loading": "Loading events…",
@@ -95,20 +100,21 @@
     }
   },
   "ranking": {
+    "subtitle": "Overheated, watchlist, and fairly priced — clearly bucketed",
     "loading": "Loading bias ranking…",
     "board": {
       "label": "Ranking board",
       "bubble": {
-        "title": "Bubble Risk",
-        "empty": "No bubble-risk options right now"
+        "title": "Overheated",
+        "empty": "No overheated options right now"
       },
       "underhyped": {
-        "title": "Value Opportunity",
-        "empty": "No value opportunities right now"
+        "title": "Watchlist",
+        "empty": "No watchlist options right now"
       },
       "fair": {
-        "title": "Fairly Priced",
-        "empty": "No fairly priced options right now"
+        "title": "Normal",
+        "empty": "No normal-structure options right now"
       }
     },
     "item": {
@@ -142,7 +148,8 @@
       "copyImageSuccess": "Image copied to clipboard.",
       "copyImageError": "Couldn't copy the image. Try downloading it instead.",
       "copyLinkSuccess": "Link copied.",
-      "copyLinkError": "Couldn't copy the link."
+      "copyLinkError": "Couldn't copy the link.",
+      "uploadError": "Couldn't prepare the image link. Try downloading the poster instead."
     },
     "intent": {
       "label": "Share to",
@@ -155,10 +162,13 @@
     },
     "poster": {
       "eyebrow": "Bias result",
+      "kicker": "Market mispricing signal",
       "coreOption": "Core option",
+      "impliedProbability": "Implied probability",
       "biasScore": "Bias score",
       "source": "Source: Polymarket",
-      "generatedTime": "Poster generated: {{time}}"
+      "generatedTime": "Poster generated: {{time}}",
+      "watermark": "Found by polyEdge"
     }
   },
   "placeholder": {

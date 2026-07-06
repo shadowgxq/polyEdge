@@ -36,6 +36,17 @@ class MarketOption(BaseModel):
     traders: int | None = None  # per-option 参与/持仓人数，可空
     degraded_note: str | None = None  # 口径限制说明（如多 outcome 无法拆到选项级）
 
+    # 零新请求白拿的扩展信号字段（同 Gamma /events 响应，bias-multi-signal）。
+    # 缺失置 None，诚实标缺失，交由下游按缺失兜底（多 outcome 无法拆到选项级时同 volume 置 None）。
+    one_day_price_change: float | None = None  # 单日价格变化，动量信号源
+    one_week_price_change: float | None = None  # 单周价格变化
+    best_bid: float | None = None  # 盘口买一
+    best_ask: float | None = None  # 盘口卖一
+    spread: float | None = None  # 买卖价差（上游已算），流动性脆弱度源
+    volume1wk: float | None = None  # 近一周成交量，成交加速源
+    volume1mo: float | None = None  # 近一月成交量
+    competitive: float | None = None  # Polymarket 竞争度指标
+
 
 class MarketEvent(BaseModel):
     """归一化事件级数据，承载选项集合与事件级关注度字段。"""

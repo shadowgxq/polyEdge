@@ -8,9 +8,33 @@
         "event_id": "evt-normal",
         "comment_count": 12,
         "options": [
-          {"option_id": "A", "label": "Alpha", "price": 55, "volume": 60, "liquidity": 60, "volume24hr": 60, "traders": 50},
-          {"option_id": "B", "label": "Beta", "price": 30, "volume": 30, "liquidity": 30, "volume24hr": 30, "traders": 30},
-          {"option_id": "C", "label": "Gamma", "price": 15, "volume": 10, "liquidity": 10, "volume24hr": 10, "traders": 20}
+          {
+            "option_id": "A",
+            "label": "Alpha",
+            "price": 55,
+            "volume": 60,
+            "liquidity": 60,
+            "volume24hr": 60,
+            "traders": 50
+          },
+          {
+            "option_id": "B",
+            "label": "Beta",
+            "price": 30,
+            "volume": 30,
+            "liquidity": 30,
+            "volume24hr": 30,
+            "traders": 30
+          },
+          {
+            "option_id": "C",
+            "label": "Gamma",
+            "price": 15,
+            "volume": 10,
+            "liquidity": 10,
+            "volume24hr": 10,
+            "traders": 20
+          }
         ]
       },
       "expected": {
@@ -18,22 +42,52 @@
         "not_applicable_reason": null,
         "degraded_trade_only": false,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": -3, "category": "fairly_priced"},
-          {"option_id": "B", "excluded": false, "bias": 1, "category": "fairly_priced"},
-          {"option_id": "C", "excluded": false, "bias": 2, "category": "fairly_priced"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": -3,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": 1,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": 3,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
     {
       "name": "threshold_boundary_pos_neg",
       "note": "阈值边界 +15 / -15（恰达阈值入泡沫 / 冷门）；w_vol=1 隔离交易分量，退化",
-      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "params": {
+        "w_vol": 1,
+        "w_liq": 0,
+        "w_24h": 0,
+        "w_turn": 0
+      },
       "event": {
         "event_id": "evt-threshold",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 50, "volume": 65, "traders": null},
-          {"option_id": "B", "price": 50, "volume": 35, "traders": null}
+          {
+            "option_id": "A",
+            "price": 50,
+            "volume": 65,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 50,
+            "volume": 35,
+            "traders": null
+          }
         ]
       },
       "expected": {
@@ -41,21 +95,46 @@
         "not_applicable_reason": null,
         "degraded_trade_only": true,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 15, "category": "bubble_risk"},
-          {"option_id": "B", "excluded": false, "bias": -15, "category": "value_opportunity"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 15,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -15,
+            "category": "low_attention_favorite"
+          }
         ]
       }
     },
     {
       "name": "threshold_boundary_inside",
       "note": "阈值内 14（-T<bias<+T 为合理）",
-      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "params": {
+        "w_vol": 1,
+        "w_liq": 0,
+        "w_24h": 0,
+        "w_turn": 0
+      },
       "event": {
         "event_id": "evt-threshold-inside",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 50, "volume": 64, "traders": null},
-          {"option_id": "B", "price": 50, "volume": 36, "traders": null}
+          {
+            "option_id": "A",
+            "price": 50,
+            "volume": 64,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 50,
+            "volume": 36,
+            "traders": null
+          }
         ]
       },
       "expected": {
@@ -63,21 +142,46 @@
         "not_applicable_reason": null,
         "degraded_trade_only": true,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 14, "category": "fairly_priced"},
-          {"option_id": "B", "excluded": false, "bias": -14, "category": "fairly_priced"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 14,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -14,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
     {
       "name": "round_half_up_boundary",
       "note": "round 半值向上进位 d_i*100=14.5->15 / -14.5->-15（防 banker's rounding）",
-      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "params": {
+        "w_vol": 1,
+        "w_liq": 0,
+        "w_24h": 0,
+        "w_turn": 0
+      },
       "event": {
         "event_id": "evt-round-half",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 500, "volume": 645, "traders": null},
-          {"option_id": "B", "price": 500, "volume": 355, "traders": null}
+          {
+            "option_id": "A",
+            "price": 500,
+            "volume": 645,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 500,
+            "volume": 355,
+            "traders": null
+          }
         ]
       },
       "expected": {
@@ -85,21 +189,46 @@
         "not_applicable_reason": null,
         "degraded_trade_only": true,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 15, "category": "bubble_risk"},
-          {"option_id": "B", "excluded": false, "bias": -15, "category": "value_opportunity"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 15,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -15,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
     {
       "name": "clamp_extreme",
       "note": "极值 clamp 边界，bias 触及 +100 / -100",
-      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "params": {
+        "w_vol": 1,
+        "w_liq": 0,
+        "w_24h": 0,
+        "w_turn": 0
+      },
       "event": {
         "event_id": "evt-clamp",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 1, "volume": 100, "traders": null},
-          {"option_id": "B", "price": 999, "volume": 0, "traders": null}
+          {
+            "option_id": "A",
+            "price": 1,
+            "volume": 100,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 999,
+            "volume": 0,
+            "traders": null
+          }
         ]
       },
       "expected": {
@@ -107,8 +236,18 @@
         "not_applicable_reason": null,
         "degraded_trade_only": true,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 100, "category": "bubble_risk"},
-          {"option_id": "B", "excluded": false, "bias": -100, "category": "value_opportunity"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 100,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -100,
+            "category": "low_attention_favorite"
+          }
         ]
       }
     },
@@ -120,8 +259,22 @@
         "event_id": "evt-zero-volume",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 50, "volume": 0, "liquidity": 60, "volume24hr": 0, "traders": 50},
-          {"option_id": "B", "price": 50, "volume": 0, "liquidity": 40, "volume24hr": 0, "traders": 50}
+          {
+            "option_id": "A",
+            "price": 50,
+            "volume": 0,
+            "liquidity": 60,
+            "volume24hr": 0,
+            "traders": 50
+          },
+          {
+            "option_id": "B",
+            "price": 50,
+            "volume": 0,
+            "liquidity": 40,
+            "volume24hr": 0,
+            "traders": 50
+          }
         ]
       },
       "expected": {
@@ -129,8 +282,18 @@
         "not_applicable_reason": null,
         "degraded_trade_only": false,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 4, "category": "fairly_priced"},
-          {"option_id": "B", "excluded": false, "bias": -4, "category": "fairly_priced"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 2,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -2,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
@@ -142,8 +305,22 @@
         "event_id": "evt-zero-heat",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 50, "volume": 0, "liquidity": 0, "volume24hr": 0, "traders": null},
-          {"option_id": "B", "price": 50, "volume": 0, "liquidity": 0, "volume24hr": 0, "traders": null}
+          {
+            "option_id": "A",
+            "price": 50,
+            "volume": 0,
+            "liquidity": 0,
+            "volume24hr": 0,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 50,
+            "volume": 0,
+            "liquidity": 0,
+            "volume24hr": 0,
+            "traders": null
+          }
         ]
       },
       "expected": {
@@ -151,8 +328,18 @@
         "not_applicable_reason": null,
         "degraded_trade_only": true,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 0, "category": "fairly_priced"},
-          {"option_id": "B", "excluded": false, "bias": 0, "category": "fairly_priced"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 0,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": 0,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
@@ -164,9 +351,30 @@
         "event_id": "evt-degraded",
         "comment_count": 3,
         "options": [
-          {"option_id": "A", "price": 40, "volume": 60, "liquidity": 60, "volume24hr": 60, "traders": 100},
-          {"option_id": "B", "price": 35, "volume": 30, "liquidity": 30, "volume24hr": 30, "traders": null},
-          {"option_id": "C", "price": 25, "volume": 10, "liquidity": 10, "volume24hr": 10, "traders": 50}
+          {
+            "option_id": "A",
+            "price": 40,
+            "volume": 60,
+            "liquidity": 60,
+            "volume24hr": 60,
+            "traders": 100
+          },
+          {
+            "option_id": "B",
+            "price": 35,
+            "volume": 30,
+            "liquidity": 30,
+            "volume24hr": 30,
+            "traders": null
+          },
+          {
+            "option_id": "C",
+            "price": 25,
+            "volume": 10,
+            "liquidity": 10,
+            "volume24hr": 10,
+            "traders": 50
+          }
         ]
       },
       "expected": {
@@ -174,9 +382,24 @@
         "not_applicable_reason": null,
         "degraded_trade_only": true,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": 13, "category": "fairly_priced"},
-          {"option_id": "B", "excluded": false, "bias": -4, "category": "fairly_priced"},
-          {"option_id": "C", "excluded": false, "bias": -9, "category": "fairly_priced"}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 13,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -4,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": -9,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
@@ -188,9 +411,30 @@
         "event_id": "evt-reexclude",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 0, "volume": 50, "liquidity": 50, "volume24hr": 50, "traders": 10},
-          {"option_id": "B", "price": 60, "volume": 30, "liquidity": 30, "volume24hr": 30, "traders": 30},
-          {"option_id": "C", "price": 40, "volume": 20, "liquidity": 20, "volume24hr": 20, "traders": 20}
+          {
+            "option_id": "A",
+            "price": 0,
+            "volume": 50,
+            "liquidity": 50,
+            "volume24hr": 50,
+            "traders": 10
+          },
+          {
+            "option_id": "B",
+            "price": 60,
+            "volume": 30,
+            "liquidity": 30,
+            "volume24hr": 30,
+            "traders": 30
+          },
+          {
+            "option_id": "C",
+            "price": 40,
+            "volume": 20,
+            "liquidity": 20,
+            "volume24hr": 20,
+            "traders": 20
+          }
         ]
       },
       "expected": {
@@ -198,9 +442,24 @@
         "not_applicable_reason": null,
         "degraded_trade_only": false,
         "options": [
-          {"option_id": "A", "excluded": true, "bias": null, "category": null},
-          {"option_id": "B", "excluded": false, "bias": -2, "category": "fairly_priced"},
-          {"option_id": "C", "excluded": false, "bias": 2, "category": "fairly_priced"}
+          {
+            "option_id": "A",
+            "excluded": true,
+            "bias": null,
+            "category": null
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -2,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": 2,
+            "category": "consensus_favorite"
+          }
         ]
       }
     },
@@ -212,7 +471,14 @@
         "event_id": "evt-single",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 70, "volume": 50, "liquidity": 50, "volume24hr": 50, "traders": 50}
+          {
+            "option_id": "A",
+            "price": 70,
+            "volume": 50,
+            "liquidity": 50,
+            "volume24hr": 50,
+            "traders": 50
+          }
         ]
       },
       "expected": {
@@ -220,7 +486,12 @@
         "not_applicable_reason": "single_option",
         "degraded_trade_only": false,
         "options": [
-          {"option_id": "A", "excluded": false, "bias": null, "category": null}
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": null,
+            "category": null
+          }
         ]
       }
     },
@@ -232,8 +503,22 @@
         "event_id": "evt-noprice",
         "comment_count": null,
         "options": [
-          {"option_id": "A", "price": 0, "volume": 50, "liquidity": 50, "volume24hr": 50, "traders": 50},
-          {"option_id": "B", "price": 0, "volume": 40, "liquidity": 40, "volume24hr": 40, "traders": 40}
+          {
+            "option_id": "A",
+            "price": 0,
+            "volume": 50,
+            "liquidity": 50,
+            "volume24hr": 50,
+            "traders": 50
+          },
+          {
+            "option_id": "B",
+            "price": 0,
+            "volume": 40,
+            "liquidity": 40,
+            "volume24hr": 40,
+            "traders": 40
+          }
         ]
       },
       "expected": {
@@ -241,8 +526,327 @@
         "not_applicable_reason": "no_valid_price",
         "degraded_trade_only": false,
         "options": [
-          {"option_id": "A", "excluded": true, "bias": null, "category": null},
-          {"option_id": "B", "excluded": true, "bias": null, "category": null}
+          {
+            "option_id": "A",
+            "excluded": true,
+            "bias": null,
+            "category": null
+          },
+          {
+            "option_id": "B",
+            "excluded": true,
+            "bias": null,
+            "category": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "favorite_overheat",
+      "note": "热门池选项在关注残差、正动量、脆弱度和成交加速共同作用下判过热热门",
+      "params": null,
+      "event": {
+        "event_id": "evt-favorite-overheat",
+        "comment_count": null,
+        "options": [
+          {
+            "option_id": "A",
+            "price": 0.45,
+            "volume": 100,
+            "liquidity": 50,
+            "volume24hr": 900,
+            "volume1wk": 700,
+            "one_day_price_change": 0.1,
+            "spread": 0.04,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 0.35,
+            "volume": 100,
+            "liquidity": 50,
+            "volume24hr": 50,
+            "volume1wk": 700,
+            "one_day_price_change": 0,
+            "spread": 0.001,
+            "traders": null
+          },
+          {
+            "option_id": "C",
+            "price": 0.2,
+            "volume": 100,
+            "liquidity": 50,
+            "volume24hr": 50,
+            "volume1wk": 700,
+            "one_day_price_change": 0,
+            "spread": 0.001,
+            "traders": null
+          }
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": 17,
+            "category": "overheated_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -16,
+            "category": "low_attention_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": -1,
+            "category": "consensus_favorite"
+          }
+        ]
+      }
+    },
+    {
+      "name": "longshot_watch",
+      "note": "冷门池选项不拥挤但流动性健康、低脆弱且有成交 -> 观察冷门",
+      "params": null,
+      "event": {
+        "event_id": "evt-longshot-watch",
+        "comment_count": null,
+        "options": [
+          {
+            "option_id": "A",
+            "price": 0.45,
+            "volume": 1000,
+            "liquidity": 100,
+            "volume24hr": 500,
+            "volume1wk": 3500,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 0.35,
+            "volume": 1000,
+            "liquidity": 100,
+            "volume24hr": 500,
+            "volume1wk": 3500,
+            "traders": null
+          },
+          {
+            "option_id": "C",
+            "price": 0.15,
+            "volume": 1000,
+            "liquidity": 100,
+            "volume24hr": 500,
+            "volume1wk": 3500,
+            "traders": null
+          },
+          {
+            "option_id": "D",
+            "price": 0.05,
+            "volume": 100,
+            "liquidity": 3000,
+            "volume24hr": 1,
+            "volume1wk": 7,
+            "one_day_price_change": 0.02,
+            "spread": 0.0005,
+            "traders": null
+          }
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": -15,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -5,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": 15,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "D",
+            "excluded": false,
+            "bias": 4,
+            "category": "watch_longshot"
+          }
+        ]
+      }
+    },
+    {
+      "name": "longshot_hyped",
+      "note": "冷门池选项交易关注度明显高于其预期关注度 -> 被炒作冷门",
+      "params": null,
+      "event": {
+        "event_id": "evt-longshot-hyped",
+        "comment_count": null,
+        "options": [
+          {
+            "option_id": "A",
+            "price": 0.45,
+            "volume": 100,
+            "liquidity": 500,
+            "volume24hr": 100,
+            "volume1wk": 700,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 0.35,
+            "volume": 100,
+            "liquidity": 500,
+            "volume24hr": 100,
+            "volume1wk": 700,
+            "traders": null
+          },
+          {
+            "option_id": "C",
+            "price": 0.15,
+            "volume": 100,
+            "liquidity": 500,
+            "volume24hr": 100,
+            "volume1wk": 700,
+            "traders": null
+          },
+          {
+            "option_id": "D",
+            "price": 0.05,
+            "volume": 100,
+            "liquidity": 500,
+            "volume24hr": 900,
+            "volume1wk": 700,
+            "one_day_price_change": 0.08,
+            "spread": 0.001,
+            "traders": null
+          }
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": -28,
+            "category": "low_attention_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -18,
+            "category": "low_attention_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": 2,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "D",
+            "excluded": false,
+            "bias": 43,
+            "category": "hyped_longshot"
+          }
+        ]
+      }
+    },
+    {
+      "name": "quiet_longshot",
+      "note": "冷门池选项无低脆弱/流动性健康/成交支撑 -> 普通冷门",
+      "params": null,
+      "event": {
+        "event_id": "evt-quiet-longshot",
+        "comment_count": null,
+        "options": [
+          {
+            "option_id": "A",
+            "price": 0.45,
+            "volume": 100,
+            "liquidity": 1000,
+            "volume24hr": 300,
+            "volume1wk": 2100,
+            "traders": null
+          },
+          {
+            "option_id": "B",
+            "price": 0.35,
+            "volume": 100,
+            "liquidity": 1000,
+            "volume24hr": 300,
+            "volume1wk": 2100,
+            "traders": null
+          },
+          {
+            "option_id": "C",
+            "price": 0.15,
+            "volume": 100,
+            "liquidity": 1000,
+            "volume24hr": 300,
+            "volume1wk": 2100,
+            "traders": null
+          },
+          {
+            "option_id": "D",
+            "price": 0.05,
+            "volume": 0,
+            "liquidity": 0,
+            "volume24hr": 0,
+            "volume1wk": 0,
+            "one_day_price_change": null,
+            "spread": 0.05,
+            "traders": null
+          }
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {
+            "option_id": "A",
+            "excluded": false,
+            "bias": -12,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "B",
+            "excluded": false,
+            "bias": -2,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "C",
+            "excluded": false,
+            "bias": 18,
+            "category": "consensus_favorite"
+          },
+          {
+            "option_id": "D",
+            "excluded": false,
+            "bias": -5,
+            "category": "quiet_longshot"
+          }
         ]
       }
     }

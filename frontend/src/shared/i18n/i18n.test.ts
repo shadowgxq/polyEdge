@@ -19,10 +19,10 @@ describe('i18n', () => {
   });
 
   it('translates bias labels per language and interpolates market content', async () => {
-    expect(i18n.t('bias.label.hot')).toBe('Overheated · Bubble Risk');
+    expect(i18n.t('bias.label.hot')).toBe('Crowded Attention Signal');
 
     await i18n.changeLanguage('zh');
-    expect(i18n.t('bias.label.cold')).toBe('低热度·冷门机会');
+    expect(i18n.t('bias.label.cold')).toBe('低关注·观察信号');
     expect(i18n.t('detail.topBias', { eventName: 'World Cup 2026', optionName: 'Brazil' })).toBe(
       'World Cup 2026 中 Brazil 偏差最高',
     );

@@ -16,7 +16,7 @@ vi.mock('../pages/bias-ranking/bias-ranking.api', () => ({
         optionName: 'Yes',
         impliedProbability: 0.82,
         biasScore: 1.2,
-        label: { zh: '高热度·泡沫风险', en: 'Overheated · Bubble Risk' },
+        label: { zh: '过热热门', en: 'Overheated Favorite' },
       },
     ],
     underhyped: [],

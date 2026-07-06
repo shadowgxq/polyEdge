@@ -33,6 +33,8 @@ export type EventCardDto = {
   slug: string;
   title: string;
   options: EventOptionDto[];
+  /** 该事件选项总数（options 仅为按概率降序的 TopN 预览子集）。 */
+  options_total: number;
   overview_label: EventOverviewLabelDto | null;
   overview_option_name: string | null;
   applicable: boolean;
@@ -81,7 +83,10 @@ export type EventOverviewLabel = {
 export type EventCard = {
   slug: string;
   title: string;
+  /** 按概率降序的 TopN 选项预览。 */
   options: EventOption[];
+  /** 该事件选项总数，> options.length 时前端提示「+N 更多」。 */
+  optionsTotal: number;
   /** 概览偏差标签本地化文案；`applicable=false` 时为 null。 */
   overviewLabel: EventOverviewLabel | null;
   /** 概览标签对应的最大偏差选项名；`applicable=false` 时为 null。 */

@@ -12,6 +12,7 @@ const EVENT: EventCardModel = {
   slug: 'event-one',
   title: 'Event one',
   options: [{ name: 'Yes', impliedProbability: 0.5 }],
+  optionsTotal: 1,
   overviewLabel: null,
   overviewOptionName: null,
   applicable: false,

@@ -8,7 +8,12 @@ from collections.abc import Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
 from app.services.bias_scoring.contracts import EventInput, OptionInput
-from app.services.bias_scoring.labels import classify, label_en, label_zh
+from app.services.bias_scoring.labels import (
+    Pool,
+    classify_option,
+    label_en,
+    label_zh,
+)
 from app.services.bias_scoring.params import DEFAULT_PARAMS, BiasParams
 from app.services.bias_scoring.results import EventBiasResult, OptionBiasResult
 
@@ -20,6 +25,9 @@ EXCLUSION_INVALID_PRICE = "invalid_price"
 
 _BIAS_MIN = -100
 _BIAS_MAX = 100
+
+# 数值兜底极小量，避免除零（bias-multi-signal）。
+_EPS = 1e-9
 
 
 def _num(value: float | None) -> float:
@@ -64,16 +72,18 @@ def _turnover(option: OptionInput) -> float:
 
 
 def _trade_shares(options: Sequence[OptionInput], params: BiasParams) -> list[float]:
-    """交易热度 trade_i：四项份额归一后加权合成（+可选 depth，bias-algorithm §3.2）。"""
+    """交易关注度 trade_i：近期成交优先的 L0 份额合成（+可选 depth，bias-algorithm §3.2）。"""
     vol_share = norm([_num(o.volume) for o in options])
     liq_share = norm([_num(o.liquidity) for o in options])
     v24_share = norm([_num(o.volume24hr) for o in options])
+    v1wk_share = norm([_num(o.volume1wk) for o in options])
     turn_share = norm([_turnover(o) for o in options])
 
     trade = [
         params.w_vol * vol_share[i]
         + params.w_liq * liq_share[i]
         + params.w_24h * v24_share[i]
+        + params.w_1wk * v1wk_share[i]
         + params.w_turn * turn_share[i]
         for i in range(len(options))
     ]
@@ -106,6 +116,90 @@ def _passthrough_result(
         excluded=excluded,
         exclusion_reason=exclusion_reason,
     )
+
+
+# ---------------- 多信号（bias-multi-signal，纯函数、缺失→0 兜底） ----------------
+
+
+def _pool(rank: int, p_share: float, params: BiasParams) -> Pool:
+    """身份池：由市场概率份额与排名决定，不由热度决定（design D3）。"""
+    if rank <= params.favorite_rank_max or p_share >= params.favorite_prob_min:
+        return Pool.FAVORITE
+    if p_share < params.longshot_prob_max:
+        return Pool.LONGSHOT
+    return Pool.CONTENDER
+
+
+def _expected_attention_shares(
+    p_shares: Sequence[float], params: BiasParams
+) -> list[float]:
+    """非线性预期热度：normalize(p_i^γ)，避免热门被线性预期过度惩罚。"""
+    gamma = max(params.attention_expectation_gamma, _EPS)
+    expected = [p**gamma for p in p_shares]
+    return norm(expected)
+
+
+def _momentum(option: OptionInput, params: BiasParams) -> float:
+    """价格动量：单日价格变化按参考归一到 [-1, 1]，缺失记 0。"""
+    change = option.one_day_price_change
+    if change is None:
+        return 0.0
+    return clamp(change / params.momentum_ref, -1.0, 1.0)
+
+
+def _fragility(option: OptionInput, params: BiasParams) -> float:
+    """流动性脆弱度：相对买卖价差按参考归一到 [0, 1]，缺失记 0（视为不脆弱/未知）。"""
+    spread = option.spread
+    price = option.price
+    if spread is None or price is None or price <= 0:
+        return 0.0
+    return clamp((spread / price) / params.spread_ref, 0.0, 1.0)
+
+
+def _acceleration(option: OptionInput) -> float:
+    """成交加速：24h 成交量相对周均的偏离，归一到 [-1, 1]，缺失记 0。"""
+    v24 = option.volume24hr
+    v1wk = option.volume1wk
+    if v24 is None or v1wk is None or v1wk <= 0:
+        return 0.0
+    daily_avg = v1wk / 7.0
+    return clamp(v24 / (daily_avg + _EPS) - 1.0, -1.0, 1.0)
+
+
+def _overheat_score(
+    crowding: float,
+    momentum: float,
+    fragility: float,
+    acceleration: float,
+    params: BiasParams,
+) -> float:
+    """过热分 ∈ [0,100]：拥挤↑ + 动量↑ + 脆弱↑ + 加速↑ 的加权合成（design D5）。"""
+    w = params.overheat_weights
+    raw = (
+        w[0] * clamp(crowding / params.crowd_ref, 0.0, 1.0)
+        + w[1] * max(momentum, 0.0)
+        + w[2] * fragility
+        + w[3] * max(acceleration, 0.0)
+    )
+    return 100.0 * clamp(raw, 0.0, 1.0)
+
+
+def _watch_score(
+    liquidity_health: float,
+    momentum: float,
+    fragility: float,
+    has_volume: float,
+    params: BiasParams,
+) -> float:
+    """观察分 ∈ [0,100]：健康流动性 + 正动量 + 低脆弱 + 有成交（design D5，仅冷门池）。"""
+    w = params.watch_weights
+    raw = (
+        w[0] * liquidity_health
+        + w[1] * max(momentum, 0.0)
+        + w[2] * (1.0 - fragility)
+        + w[3] * has_volume
+    )
+    return 100.0 * clamp(raw, 0.0, 1.0)
 
 
 def compute_event_bias(
@@ -168,12 +262,48 @@ def compute_event_bias(
     else:
         hs_shares = [h / total_h for h in heat]
 
-    # §3.7 偏差与偏差评分。
+    # 多信号预备份额（bias-multi-signal）：排名、流动性与非线性预期关注度。
+    ranks = [1 + sum(1 for q in p_shares if q > p_shares[i]) for i in range(n)]
+    liq_shares = norm([_num(o.liquidity) for o in valid])
+    expected_attention_shares = _expected_attention_shares(p_shares, params)
+
+    # §3.7 偏差、多信号与诚实标签。
     valid_results: list[OptionBiasResult] = []
     for i, option in enumerate(valid):
         d = hs_shares[i] - p_shares[i]
+        attention_residual = hs_shares[i] - expected_attention_shares[i]
         bias = int(clamp(round_half_away_from_zero(d * 100), _BIAS_MIN, _BIAS_MAX))
-        category = classify(bias, params.threshold_t)
+
+        pool = _pool(ranks[i], p_shares[i], params)
+        momentum = _momentum(option, params)
+        fragility = _fragility(option, params)
+        acceleration = _acceleration(option)
+        overheat = _overheat_score(
+            attention_residual, momentum, fragility, acceleration, params
+        )
+
+        if pool is Pool.LONGSHOT:
+            liquidity_health = clamp(
+                0.5 * (1.0 - fragility) + 0.5 * min(liq_shares[i] * n, 1.0), 0.0, 1.0
+            )
+            has_volume = (
+                1.0 if (_num(option.volume) > 0 or _num(option.volume24hr) > 0) else 0.0
+            )
+            watch: float | None = _watch_score(
+                liquidity_health, momentum, fragility, has_volume, params
+            )
+        else:
+            watch = None
+
+        category = classify_option(
+            pool,
+            attention_residual,
+            overheat,
+            watch or 0.0,
+            params.threshold_t,
+            overheat_hi=params.overheat_hi,
+            watch_hi=params.watch_hi,
+        )
         valid_results.append(
             OptionBiasResult(
                 option_id=option.option_id,
@@ -187,6 +317,11 @@ def compute_event_bias(
                 hs=hs_shares[i],
                 d=d,
                 bias=bias,
+                pool=pool,
+                momentum=momentum,
+                fragility=fragility,
+                overheat_score=overheat,
+                watch_score=watch,
                 category=category,
                 label_zh=label_zh(category),
                 label_en=label_en(category),

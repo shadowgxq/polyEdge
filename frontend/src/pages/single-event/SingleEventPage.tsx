@@ -45,6 +45,7 @@ function buildEventPosterContent(
     eyebrowKey: 'share.poster.eyebrow',
     headline: detail.title,
     coreOptionName: coreOption.name,
+    impliedProbability: coreOption.impliedProbability,
     biasScore: coreOption.biasScore,
     signal: labelText ? { kind: 'text', text: labelText } : { kind: 'none' },
     dataSnapshotAt: detail.dataSnapshotAt,
@@ -65,13 +66,14 @@ export function SingleEventPage() {
 
   const detailQuery = useEventDetailQuery(eventId);
   const detail = detailQuery.data;
+  const visibleOptions = detail?.options.filter((option) => !option.excluded) ?? [];
 
   function handleBack() {
     navigate(-1);
   }
 
   const currentCrumb = detail?.title ?? eventId ?? '';
-  const coreOption = detail?.applicable ? selectCoreOption(detail.options) : undefined;
+  const coreOption = detail?.applicable ? selectCoreOption(visibleOptions) : undefined;
   const posterContent =
     detail && coreOption ? buildEventPosterContent(detail, coreOption, i18n.language) : null;
 
@@ -107,7 +109,7 @@ export function SingleEventPage() {
         </p>
       ) : detailQuery.isError ? (
         <ErrorState onRetry={() => void detailQuery.refetch()} />
-      ) : !detail || detail.options.length === 0 ? (
+      ) : !detail || visibleOptions.length === 0 ? (
         <EmptyState
           title={t('detail.empty')}
           description={t('detail.emptyHint')}
@@ -126,13 +128,6 @@ export function SingleEventPage() {
             ) : null}
           </div>
 
-          {detail.degradedTradeOnly ? (
-            <EventDetailNotice
-              title={t('detail.degradedTradeOnly')}
-              description={t('detail.degradedTradeOnlyHint')}
-            />
-          ) : null}
-
           {!detail.applicable ? (
             <EventDetailNotice
               title={t('detail.notApplicable')}
@@ -142,7 +137,7 @@ export function SingleEventPage() {
 
           <EventEngagement commentCount={detail.commentCount} snapshotAt={detail.dataSnapshotAt} />
 
-          <EventOptionList options={detail.options} applicable={detail.applicable} />
+          <EventOptionList options={visibleOptions} applicable={detail.applicable} />
         </div>
       )}
     </section>

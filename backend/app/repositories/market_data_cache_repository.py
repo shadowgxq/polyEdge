@@ -23,6 +23,7 @@ _PRICE_PREFIX = "market:price:"
 _FALLBACK_PREFIX = "market:fallback:"
 _LIST_PREFIX = "market:list:"
 _LIST_FALLBACK_PREFIX = "market:list:fallback:"
+_REFRESH_LOCK_PREFIX = "market:refresh-lock:"
 
 
 @redis_safe(default=None)
@@ -33,6 +34,11 @@ def _get_raw(key: str) -> str | None:
 @redis_safe()
 def _set_raw(key: str, value: str, ttl: int) -> None:
     redis_client.set(key, value, ex=ttl)
+
+
+@redis_safe(default=False)
+def _set_lock(key: str, ttl: int) -> bool:
+    return bool(redis_client.set(key, "1", ex=ttl, nx=True))
 
 
 def _dumps(payload: dict) -> str:
@@ -72,6 +78,11 @@ class MarketDataCacheRepository:
                     "volume24hr": option.volume24hr,
                     "traders": option.traders,
                     "degraded_note": option.degraded_note,
+                    # 慢变量扩展信号入长 TTL 元数据层（bias-multi-signal）。
+                    "one_week_price_change": option.one_week_price_change,
+                    "volume1wk": option.volume1wk,
+                    "volume1mo": option.volume1mo,
+                    "competitive": option.competitive,
                 }
                 for option in event.options
             ],
@@ -82,6 +93,11 @@ class MarketDataCacheRepository:
                 option.outcome: {
                     "price": option.price,
                     "price_source": option.price_source.value,
+                    # 波动量扩展信号入短 TTL 价格层（bias-multi-signal）。
+                    "one_day_price_change": option.one_day_price_change,
+                    "best_bid": option.best_bid,
+                    "best_ask": option.best_ask,
+                    "spread": option.spread,
                 }
                 for option in event.options
             },
@@ -115,6 +131,9 @@ class MarketDataCacheRepository:
 
     def set_list(self, name: str, events: list[MarketEvent]) -> None:
         """列表整体写入：fresh（元数据 TTL）+ fallback（长 TTL）。"""
+        for event in events:
+            # 列表来源的事件快照同时回填单事件缓存，避免从列表进入详情时再次冷回源。
+            self.set_event(event)
         payload = {"events": [event.model_dump(mode="json") for event in events]}
         serialized = _dumps(payload)
         _set_raw(_LIST_PREFIX + name, serialized, settings.market_metadata_ttl)
@@ -125,6 +144,15 @@ class MarketDataCacheRepository:
 
     def get_fallback_list(self, name: str) -> list[MarketEvent] | None:
         return _load_list(_get_raw(_LIST_FALLBACK_PREFIX + name))
+
+    # ---------------- 刷新意图限频 ----------------
+
+    def claim_refresh(self, key: str, ttl: int | None = None) -> bool:
+        """尝试领取刷新锁；成功者负责投递后台刷新，失败者直接复用旧快照。"""
+        return _set_lock(
+            _REFRESH_LOCK_PREFIX + key,
+            ttl if ttl is not None else settings.market_refresh_throttle_seconds,
+        )
 
 
 def _merge_event(meta: dict, price: dict) -> MarketEvent:
@@ -146,6 +174,15 @@ def _merge_event(meta: dict, price: dict) -> MarketEvent:
                 volume24hr=raw_option.get("volume24hr"),
                 traders=raw_option.get("traders"),
                 degraded_note=raw_option.get("degraded_note"),
+                # 扩展信号：波动量取价格层、慢变量取元数据层（bias-multi-signal）。
+                one_day_price_change=price_entry.get("one_day_price_change"),
+                best_bid=price_entry.get("best_bid"),
+                best_ask=price_entry.get("best_ask"),
+                spread=price_entry.get("spread"),
+                one_week_price_change=raw_option.get("one_week_price_change"),
+                volume1wk=raw_option.get("volume1wk"),
+                volume1mo=raw_option.get("volume1mo"),
+                competitive=raw_option.get("competitive"),
             )
         )
     return MarketEvent(

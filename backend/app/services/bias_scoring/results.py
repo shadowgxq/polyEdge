@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from app.services.bias_scoring.labels import BiasCategory
+from app.services.bias_scoring.labels import BiasCategory, Pool
 
 
 class OptionBiasResult(BaseModel):
@@ -28,6 +28,15 @@ class OptionBiasResult(BaseModel):
     hs: float | None = Field(default=None, description="热度份额 hs_i")
     d: float | None = Field(default=None, description="偏差 d_i = hs_i - p_i")
     bias: int | None = Field(default=None, description="偏差评分 bias_i ∈ [-100, 100]")
+
+    # —— 多信号扩展（bias-multi-signal，可空，透传缺失） ——
+    pool: Pool | None = Field(default=None, description="身份池：热门/中位/冷门")
+    momentum: float | None = Field(default=None, description="价格动量信号 ∈ [-1,1]")
+    fragility: float | None = Field(default=None, description="流动性脆弱度 ∈ [0,1]")
+    overheat_score: float | None = Field(default=None, description="过热分 ∈ [0,100]")
+    watch_score: float | None = Field(
+        default=None, description="观察分 ∈ [0,100]（仅冷门池）"
+    )
 
     category: BiasCategory | None = None
     label_zh: str | None = None
@@ -61,10 +70,22 @@ class RankedOption(BaseModel):
     category: BiasCategory
     label_zh: str
     label_en: str
+    # 多信号扩展（bias-multi-signal，可空；用于三榜诚实重定义的排序与透传）。
+    pool: Pool | None = None
+    momentum: float | None = None
+    fragility: float | None = None
+    overheat_score: float | None = None
+    watch_score: float | None = None
 
 
 class RankingResult(BaseModel):
-    """多事件排行分档结果（三档互斥无交集，bias-algorithm §5）。"""
+    """多事件排行分档结果（bias-multi-signal 诚实三榜，互斥无交集）。
+
+    字段名保留兼容既有装配，语义诚实重定义：
+    - ``bubble_risk``：过热榜（过热热门 + 过热中位 + 被炒作冷门）
+    - ``value_opportunity``：观察榜（观察冷门 + 低关注热门）
+    - ``fairly_priced``：合理（共识热门 + 中位竞争者 + 普通冷门）
+    """
 
     bubble_risk: list[RankedOption] = Field(default_factory=list)
     value_opportunity: list[RankedOption] = Field(default_factory=list)

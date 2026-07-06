@@ -9,7 +9,7 @@
 **Goals:**
 
 - 填充单事件明细页正文：选项明细列表（赔率/热度/偏差评分/三分类标签）、按偏差评分排序、泡沫/冷门视觉区分。
-- 落地边界/降级标注：`degraded_trade_only`（纯交易热度）、`applicable=false`（不适用偏差分析）、选项 `excluded`（已排除），全部来自接口标注字段，前端只展示。
+- 落地边界/降级标注：`applicable=false`（不适用偏差分析）来自接口标注字段并明确展示；`degraded_trade_only` 仅作为结果口径字段消费，不额外展示事件级提示；选项 `excluded` 仅作为前端过滤信号，不进入明细列表展示。
 - 事件级 `comment_count` 关注度标签 + `data_snapshot_at` 快照时间（`SnapshotTime` 基元）。
 - 明细服务端态经 `shared/api` service + `*.queries.ts`（Query）承载，加载/空/错误态复用基元；面包屑/返回回到来源列表；只读无交易入口；≤430px 窄屏无溢出。
 
@@ -39,8 +39,8 @@
 `applicable` / `degraded_trade_only` / 选项 `excluded` 均为接口成功响应内的标注字段（`analysis-api` D7 / analysis-api-runtime「数据边界作为成功响应内标注」）。前端按字段驱动展示分支：
 
 - `applicable=false` → 渲染「不适用偏差分析」标注 + 原始选项数据（不渲染 `BiasLabel`/偏差评分）。
-- `degraded_trade_only=true` → 事件级渲染「纯交易热度」标注条，选项偏差仍按接口退化口径经 `OptionMetricsRow` 展示。
-- 选项 `excluded=true` → 该行标注「已排除」，不渲染偏差评分/标签，且不参与排序。
+- `degraded_trade_only=true` → 不额外渲染事件级提示，选项偏差直接按接口退化口径经 `OptionMetricsRow` 展示。
+- 选项 `excluded=true` → 前端在进入列表前过滤，不渲染该行，也不参与排序。
 
 前端 SHALL NOT 自行判断退化/排除/适用性（口径归 bias-algorithm §3.5/§6，后端已判定）。降级标注文案经 i18n 新增 key（沿用 `web-app-shell-i18n` 的 en/zh resource 组织与「市场内容不翻译、含市场内容句子用插值 key」约定）。
 

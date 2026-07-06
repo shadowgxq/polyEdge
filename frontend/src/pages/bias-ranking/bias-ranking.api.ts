@@ -24,6 +24,11 @@ function toRankingItem(dto: RankingItemDto): RankingItem {
     impliedProbability: dto.price,
     biasScore: dto.bias_score,
     label: { zh: dto.label.zh, en: dto.label.en },
+    pool: dto.pool ?? null,
+    momentum: dto.momentum ?? null,
+    fragility: dto.fragility ?? null,
+    overheatScore: dto.overheat_score ?? null,
+    watchScore: dto.watch_score ?? null,
   };
 }
 

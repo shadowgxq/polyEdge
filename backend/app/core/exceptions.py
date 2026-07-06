@@ -82,6 +82,17 @@ class ImageProxyUpstreamException(BusinessException):
         )
 
 
+class ImageUploadInvalidException(BusinessException):
+    """图片上传参数非法（空文件 / 非图片类型 / 超过大小上限）。"""
+
+    def __init__(self, message: str = "Invalid image upload"):
+        super().__init__(
+            code=40003,
+            message=message,
+            status_code=400,
+        )
+
+
 class UpstreamUnavailableException(BusinessException):
     """上游（Polymarket）拉取失败且无缓存快照可回退，返回明确错误态。"""
 

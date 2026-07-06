@@ -17,15 +17,15 @@
 
 ### 3. 选项明细列表与排序
 
-- [x] 3.1 下沉私有「选项列表」区块组件，对每个未排除选项渲染 `OptionMetricsRow` 基元，注入已算好的赔率（`price` 隐含概率）/热度（`heat`）/偏差评分（`bias_score`）/分类；分类经 `BiasLabel` 基元按当前语言取 `label{zh,en}` 呈现，前端不重算 `bias_i`（spec：单事件明细选项列表展示，bias-algorithm §4）。
-- [x] 3.2 实现展示层排序（`useState` 排序键），按偏差评分重排，不改任一选项数值；`excluded` 选项固定置底且不参与排序；`applicable=false` 时不提供排序（spec：按偏差评分排序与泡沫/冷门视觉区分；design D5）。
+- [x] 3.1 下沉私有「选项列表」区块组件，对每个未排除选项渲染 `OptionMetricsRow` 基元，注入已算好的赔率（`price` 隐含概率）/热度（`heat`）/偏差评分（`bias_score`）/分类；分类经 `BiasLabel` 基元按当前语言取 `label{zh,en}` 呈现，前端不重算 `bias_i`，且 `excluded` 选项在进入列表前过滤（spec：单事件明细选项列表展示，bias-algorithm §4）。
+- [x] 3.2 实现展示层排序（`useState` 排序键），按偏差评分重排，不改任一选项数值；列表仅对未排除选项排序；`applicable=false` 时不提供排序（spec：按偏差评分排序与泡沫/冷门视觉区分；design D5）。
 - [ ] 3.3 通过 `BiasLabel` 的 hot/cold/fair 信号色令泡沫风险与冷门机会选项明显视觉区分，样式只用 `tokens.css` token（spec：泡沫/冷门视觉区分，AC-3）。
 
 ### 4. 边界/降级标注（消费接口标注字段）
 
 - [x] 4.1 `applicable=false` 分支：渲染「不适用偏差分析」标注 + 原始选项数据，不渲染偏差评分/`BiasLabel`（spec：不适用偏差分析标注，PRD §5.2/bias-algorithm §6）。
-- [x] 4.2 `degraded_trade_only=true` 分支：事件级渲染「纯交易热度」标注条，选项偏差仍按接口退化口径经 `OptionMetricsRow` 展示（spec：纯交易热度退化标注，bias-algorithm §3.5）。
-- [x] 4.3 选项 `excluded=true` 分支：该行标注「已排除」，不渲染偏差评分/标签（spec：被排除选项标注，bias-algorithm §6）。
+- [x] 4.2 `degraded_trade_only=true` 分支：不额外渲染事件级提示，选项偏差直接按接口退化口径经 `OptionMetricsRow` 展示（spec：纯交易热度退化消费，bias-algorithm §3.5）。
+- [x] 4.3 选项 `excluded=true` 分支：该选项不进入明细列表展示，仅作为前端过滤信号消费（spec：被排除选项过滤，bias-algorithm §6）。
 - [x] 4.4 新增上述边界/降级标注的 i18n key（en/zh），复用 `web-app-shell-i18n` resource 组织；含市场内容的句子用占位符插值 key，事件名/选项名作变量注入不翻译（i18n 约定，PRD §4.6）。
 
 ### 5. 事件级关注度与快照时间

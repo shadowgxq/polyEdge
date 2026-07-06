@@ -28,10 +28,16 @@ export type OptionAnalysisDto = {
   heat: number;
   /** 偏差评分，后端算好；前端只展示不重算。 */
   bias_score: number;
-  /** 偏差三分类本地化文案；被排除 / 不适用时为 null。 */
+  /** 诚实标签本地化文案（八类之一）；被排除 / 不适用时为 null。 */
   label: OptionBiasLabelText | null;
   /** 价格全为 0 或数据缺失被排除出偏差计算。 */
   excluded: boolean;
+  /** 多信号扩展（bias-multi-signal，可空）。 */
+  pool?: string | null;
+  momentum?: number | null;
+  fragility?: number | null;
+  overheat_score?: number | null;
+  watch_score?: number | null;
 };
 
 export type EventDetailDto = {
@@ -57,9 +63,15 @@ export type OptionAnalysis = {
   impliedProbability: number;
   heat: number;
   biasScore: number;
-  /** 偏差三分类本地化文案；被排除 / 不适用时为 null。 */
+  /** 诚实标签本地化文案（八类之一）；被排除 / 不适用时为 null。 */
   label: OptionBiasLabelText | null;
   excluded: boolean;
+  /** 多信号扩展（bias-multi-signal，可空）。 */
+  pool?: string | null;
+  momentum?: number | null;
+  fragility?: number | null;
+  overheatScore?: number | null;
+  watchScore?: number | null;
 };
 
 export type EventDetail = {

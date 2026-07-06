@@ -18,7 +18,8 @@ import {
   shareImageFile,
 } from './shareDispatch';
 import type { ShareIntentTarget } from './shareIntents.constants';
-import type { PosterImage, ShareCapabilities } from './sharePoster.types';
+import type { PosterImage, ShareCapabilities, UploadedPosterImage } from './sharePoster.types';
+import { uploadPosterImage } from './uploadPosterImage';
 
 export type PosterCaptureState = 'idle' | 'capturing' | 'ready' | 'error';
 
@@ -29,9 +30,9 @@ export type ShareFeedback = {
   messageKey: string;
 };
 
+const CAPTURE_WATCHDOG_MS = 12000;
+
 export type UseSharePosterParams = {
-  /** 分享链接；缺省用当前页 URL。 */
-  shareUrl?: string;
   /** 已本地化的分享文案（市场内容作变量注入），用于 Web Share 与 intent 分享。 */
   shareText: string;
 };
@@ -44,6 +45,7 @@ export type UseSharePosterResult = {
   feedback: ShareFeedback | null;
   pendingAction: ShareActionKey | null;
   isReady: boolean;
+  isShareLinkReady: boolean;
   retryCapture: () => void;
   shareViaWebShare: () => Promise<void>;
   downloadImage: () => void;
@@ -52,58 +54,133 @@ export type UseSharePosterResult = {
   shareToIntent: (target: ShareIntentTarget) => void;
 };
 
-function resolveShareUrl(shareUrl: string | undefined): string {
-  if (shareUrl) {
-    return shareUrl;
+function logCaptureProgress(message: string, detail?: Record<string, unknown>): void {
+  if (import.meta.env.DEV) {
+    console.info(`[share-poster] ${message}`, detail ?? '');
   }
-  return typeof window !== 'undefined' ? window.location.href : '';
 }
 
 export function useSharePoster({
-  shareUrl,
   shareText,
 }: UseSharePosterParams): UseSharePosterResult {
   const posterRef = useRef<HTMLDivElement>(null);
   const [captureState, setCaptureState] = useState<PosterCaptureState>('idle');
+  const [captureAttempt, setCaptureAttempt] = useState(0);
   const [posterImage, setPosterImage] = useState<PosterImage | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<UploadedPosterImage | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<ShareFeedback | null>(null);
   const [pendingAction, setPendingAction] = useState<ShareActionKey | null>(null);
 
   const capabilities = useMemo(() => detectShareCapabilities(), []);
+  const captureRequestIdRef = useRef(0);
+  const uploadRequestIdRef = useRef(0);
 
-  // 出图：hook 随分享弹窗打开挂载（关闭即卸载），idle 时对离屏节点触发一次受控出图。
+  // 出图：hook 随分享弹窗打开挂载触发一次；重试只递增 attempt，不依赖 captureState 避免清理竞态。
   useEffect(() => {
-    if (captureState !== 'idle') {
-      return;
-    }
-    const node = posterRef.current;
-    if (!node) {
-      return;
-    }
+    const requestId = captureRequestIdRef.current + 1;
+    captureRequestIdRef.current = requestId;
+    logCaptureProgress('state:capturing', { requestId });
 
-    let isCancelled = false;
-    setCaptureState('capturing');
+    let watchdogId: number | undefined;
 
-    capturePoster(node)
-      .then((image) => {
-        if (isCancelled) {
+    const frameId = window.requestAnimationFrame(() => {
+      setCaptureState('capturing');
+      watchdogId = window.setTimeout(() => {
+        if (captureRequestIdRef.current !== requestId) {
           return;
         }
-        setPosterImage(image);
-        setPreviewUrl(URL.createObjectURL(image.blob));
-        setCaptureState('ready');
-      })
-      .catch(() => {
-        if (!isCancelled) {
-          setCaptureState('error');
+        logCaptureProgress('watchdog:timeout', { requestId });
+        setCaptureState('error');
+      }, CAPTURE_WATCHDOG_MS);
+
+      const node = posterRef.current;
+      if (!node) {
+        if (watchdogId !== undefined) {
+          window.clearTimeout(watchdogId);
         }
+        logCaptureProgress('ref:missing', { requestId });
+        setCaptureState('error');
+        return;
+      }
+
+      logCaptureProgress('capture:start', { requestId });
+
+      capturePoster(node, {
+        onProgress: (phase, detail) => {
+          logCaptureProgress(`capture:${phase}`, { requestId, ...detail });
+        },
+      })
+        .then((image) => {
+          if (captureRequestIdRef.current !== requestId) {
+            return;
+          }
+          if (watchdogId !== undefined) {
+            window.clearTimeout(watchdogId);
+          }
+          logCaptureProgress('capture:ready', { requestId, size: image.blob.size });
+          setPosterImage(image);
+          setUploadedImage(null);
+          setPreviewUrl(URL.createObjectURL(image.blob));
+          setCaptureState('ready');
+        })
+        .catch((error: unknown) => {
+          if (captureRequestIdRef.current !== requestId) {
+            return;
+          }
+          if (watchdogId !== undefined) {
+            window.clearTimeout(watchdogId);
+          }
+          logCaptureProgress('capture:error', {
+            requestId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          setCaptureState('error');
+        });
+    });
+
+    return () => {
+      captureRequestIdRef.current += 1;
+      window.cancelAnimationFrame(frameId);
+      if (watchdogId !== undefined) {
+        window.clearTimeout(watchdogId);
+      }
+    };
+  }, [captureAttempt]);
+
+  useEffect(() => {
+    if (!posterImage) {
+      return;
+    }
+
+    const requestId = uploadRequestIdRef.current + 1;
+    uploadRequestIdRef.current = requestId;
+
+    uploadPosterImage(posterImage)
+      .then((image) => {
+        if (uploadRequestIdRef.current !== requestId) {
+          return;
+        }
+        setUploadedImage(image);
+      })
+      .catch((error: unknown) => {
+        if (uploadRequestIdRef.current !== requestId) {
+          return;
+        }
+        logCaptureProgress('upload:error', {
+          requestId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        setUploadedImage(null);
+        setFeedback((current) =>
+          current ? current : { tone: 'error', messageKey: 'share.feedback.uploadError' },
+        );
       });
 
     return () => {
-      isCancelled = true;
+      uploadRequestIdRef.current += 1;
     };
-  }, [captureState]);
+  }, [posterImage]);
 
   // previewUrl 变化或卸载时释放上一份 object URL。
   useEffect(() => {
@@ -116,10 +193,14 @@ export function useSharePoster({
   }, [previewUrl]);
 
   const retryCapture = useCallback(() => {
+    captureRequestIdRef.current += 1;
+    uploadRequestIdRef.current += 1;
     setPosterImage(null);
+    setUploadedImage(null);
     setPreviewUrl(null);
     setFeedback(null);
     setCaptureState('idle');
+    setCaptureAttempt((attempt) => attempt + 1);
   }, []);
 
   const runImageAction = useCallback(
@@ -183,26 +264,29 @@ export function useSharePoster({
   );
 
   const copyLink = useCallback(async () => {
-    if (pendingAction) {
+    if (pendingAction || !uploadedImage) {
       return;
     }
     setPendingAction('copyLink');
     setFeedback(null);
     try {
-      await copyShareLink(resolveShareUrl(shareUrl));
+      await copyShareLink(uploadedImage.url);
       setFeedback({ tone: 'success', messageKey: 'share.feedback.copyLinkSuccess' });
     } catch {
       setFeedback({ tone: 'error', messageKey: 'share.feedback.copyLinkError' });
     } finally {
       setPendingAction(null);
     }
-  }, [pendingAction, shareUrl]);
+  }, [pendingAction, uploadedImage]);
 
   const shareToIntent = useCallback(
     (target: ShareIntentTarget) => {
-      openShareIntent(target, resolveShareUrl(shareUrl), shareText);
+      if (!uploadedImage) {
+        return;
+      }
+      openShareIntent(target, uploadedImage.url, shareText);
     },
-    [shareUrl, shareText],
+    [shareText, uploadedImage],
   );
 
   return {
@@ -213,6 +297,7 @@ export function useSharePoster({
     feedback,
     pendingAction,
     isReady: captureState === 'ready' && posterImage !== null,
+    isShareLinkReady: uploadedImage !== null,
     retryCapture,
     shareViaWebShare,
     downloadImage,

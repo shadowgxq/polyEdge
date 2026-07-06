@@ -13,7 +13,9 @@ from app.services.bias_scoring.contracts import EventInput, OptionInput
 from app.services.bias_scoring.labels import (
     CATEGORY_LABELS,
     BiasCategory,
+    Pool,
     classify,
+    classify_option,
     label_en,
     label_zh,
 )
@@ -35,9 +37,11 @@ __all__ = [
     "EventInput",
     "OptionBiasResult",
     "OptionInput",
+    "Pool",
     "RankedOption",
     "RankingResult",
     "classify",
+    "classify_option",
     "compute_event_bias",
     "label_en",
     "label_zh",

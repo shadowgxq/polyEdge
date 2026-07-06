@@ -22,7 +22,7 @@ export type SharePosterTriggerProps = {
  * `aria-label` 经 i18n 插值呈现实体名（不字符串拼接）。出图 / 分发编排全部下沉弹窗，
  * 本组件只承担入口触发与弹窗开合态。
  */
-export function SharePosterTrigger({ content, entityName, shareUrl }: SharePosterTriggerProps) {
+export function SharePosterTrigger({ content, entityName }: SharePosterTriggerProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -38,7 +38,7 @@ export function SharePosterTrigger({ content, entityName, shareUrl }: SharePoste
           {t('share.trigger.label')}
         </button>
       </Dialog.Trigger>
-      <SharePosterDialog content={content} shareUrl={shareUrl} />
+      <SharePosterDialog content={content} />
     </Dialog.Root>
   );
 }

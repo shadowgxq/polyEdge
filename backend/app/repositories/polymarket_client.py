@@ -65,6 +65,24 @@ def _to_int(value: object) -> int | None:
         return None
 
 
+def _market_signals(market: dict) -> dict[str, float | None]:
+    """从 market 级 Gamma 字段抽取零新请求白拿的扩展信号（bias-multi-signal）。
+
+    全部经 ``_to_float`` 缺失兜底为 None；键名与 ``MarketOption`` 扩展字段对齐，
+    供 ``**`` 展开到构造调用（多 outcome 无法拆到选项级时由调用方传空 dict）。
+    """
+    return {
+        "one_day_price_change": _to_float(market.get("oneDayPriceChange")),
+        "one_week_price_change": _to_float(market.get("oneWeekPriceChange")),
+        "best_bid": _to_float(market.get("bestBid")),
+        "best_ask": _to_float(market.get("bestAsk")),
+        "spread": _to_float(market.get("spread")),
+        "volume1wk": _to_float(market.get("volume1wk")),
+        "volume1mo": _to_float(market.get("volume1mo")),
+        "competitive": _to_float(market.get("competitive")),
+    }
+
+
 class PolymarketClient:
     """Gamma + CLOB 双 API 只读客户端。"""
 
@@ -77,6 +95,7 @@ class PolymarketClient:
         retry_base_delay_seconds: float | None = None,
         retry_max_attempts: int | None = None,
         retry_max_delay_seconds: float | None = None,
+        detail_use_midpoint: bool | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ):
         self._gamma_base_url = (
@@ -99,6 +118,12 @@ class PolymarketClient:
             retry_max_delay_seconds
             if retry_max_delay_seconds is not None
             else settings.market_retry_max_delay_seconds
+        )
+        # 详情路径是否取 CLOB midpoint；默认随配置（请求路径默认关，见 config）。
+        self._detail_use_midpoint = (
+            detail_use_midpoint
+            if detail_use_midpoint is not None
+            else settings.market_detail_use_midpoint
         )
         self._sleep = sleep
         self._client = http_client or httpx.Client(
@@ -167,10 +192,12 @@ class PolymarketClient:
 
     # ---------------- 归一映射 ----------------
 
-    def _normalize_event(self, raw: dict, snapshot_at: datetime) -> MarketEvent:
+    def _normalize_event(
+        self, raw: dict, snapshot_at: datetime, *, use_midpoint: bool
+    ) -> MarketEvent:
         options: list[MarketOption] = []
         for market in raw.get("markets") or []:
-            options.extend(self._normalize_market(market))
+            options.extend(self._normalize_market(market, use_midpoint=use_midpoint))
         return MarketEvent(
             slug=str(raw.get("slug") or ""),
             title=str(raw.get("title") or raw.get("slug") or ""),
@@ -180,13 +207,42 @@ class PolymarketClient:
             data_snapshot_at=snapshot_at,
         )
 
-    def _normalize_market(self, market: dict) -> list[MarketOption]:
+    def _normalize_market(
+        self, market: dict, *, use_midpoint: bool
+    ) -> list[MarketOption]:
         outcomes = _loads_list(market.get("outcomes"))
         prices = _loads_list(market.get("outcomePrices"))
         token_ids = _loads_list(market.get("clobTokenIds"))
         market_volume = _to_float(market.get("volume"))
         market_liquidity = _to_float(market.get("liquidity"))
         market_volume24hr = _to_float(market.get("volume24hr"))
+        # 扩展信号为 market 级白拿字段；与 volume 同处理：可拆到选项时映射，多 outcome 置 None。
+        market_signals = _market_signals(market)
+        group_title = str(market.get("groupItemTitle") or "").strip()
+
+        # 分组式二元子市场（如「某队夺冠 Yes/No」，60 支队 = 60 个此类市场）：
+        # 折叠为「一个候选项」= 组标题（球队/候选人名），概率取 Yes 侧，market 级量纲直接
+        # 作该候选项级（对齐 Polymarket 原生「每队一行」交互，且避免拍平成匿名 Yes/No、
+        # 避免 Yes/No 各领一份 volume 的重复计数）。
+        if group_title and _is_yes_no(outcomes):
+            token_id = token_ids[0] if token_ids else None
+            price, source = self._resolve_price(
+                token_id, prices, 0, use_midpoint=use_midpoint
+            )
+            return [
+                MarketOption(
+                    outcome=group_title,
+                    price=price,
+                    price_source=source,
+                    volume=market_volume,
+                    liquidity=market_liquidity,
+                    volume24hr=market_volume24hr,
+                    traders=_to_int(market.get("numTraders")),
+                    degraded_note=None,
+                    **market_signals,
+                )
+            ]
+
         # 二元市场（market ≈ 单选项）字段直接作选项级；多 outcome 单市场无法拆到
         # 选项级时该分量置缺失并标注，不臆造/估算（data-source §2、design D3）。
         is_binary = len(outcomes) == 2
@@ -194,7 +250,9 @@ class PolymarketClient:
         options: list[MarketOption] = []
         for index, label in enumerate(outcomes):
             token_id = token_ids[index] if index < len(token_ids) else None
-            price, source = self._resolve_price(token_id, prices, index)
+            price, source = self._resolve_price(
+                token_id, prices, index, use_midpoint=use_midpoint
+            )
             if is_binary:
                 volume, liquidity, volume24hr, note = (
                     market_volume,
@@ -202,9 +260,11 @@ class PolymarketClient:
                     market_volume24hr,
                     None,
                 )
+                signals = market_signals
             else:
                 volume = liquidity = volume24hr = None
                 note = "multi-outcome market: per-option volume/liquidity unavailable"
+                signals = {}
             options.append(
                 MarketOption(
                     outcome=str(label),
@@ -215,17 +275,25 @@ class PolymarketClient:
                     volume24hr=volume24hr,
                     traders=_to_int(market.get("numTraders")),
                     degraded_note=note,
+                    **signals,
                 )
             )
         return options
 
     def _resolve_price(
-        self, token_id: str | None, prices: list, index: int
+        self, token_id: str | None, prices: list, index: int, *, use_midpoint: bool
     ) -> tuple[float | None, PriceSource]:
-        """价格主取 CLOB midpoint，不可得回退 Gamma outcomePrices，并标注实际价源。"""
-        midpoint = self._fetch_midpoint(token_id)
-        if midpoint is not None:
-            return midpoint, PriceSource.CLOB_MIDPOINT
+        """解析选项价格并标注实际价源。
+
+        列表路径（use_midpoint=False）不逐 outcome 外呼 CLOB，直接用 Gamma 内联
+        outcomePrices，避免 N+1 串行拉取拖垮首屏（design D8 首屏可用优先）；单事件
+        详情路径（use_midpoint=True）主取更新鲜的 CLOB midpoint，不可得再回退
+        outcomePrices，仍不可得记为缺失（不臆造）。
+        """
+        if use_midpoint:
+            midpoint = self._fetch_midpoint(token_id)
+            if midpoint is not None:
+                return midpoint, PriceSource.CLOB_MIDPOINT
         if index < len(prices):
             fallback = _to_float(prices[index])
             if fallback is not None:
@@ -235,16 +303,27 @@ class PolymarketClient:
     # ---------------- 对外拉取 ----------------
 
     def fetch_event_by_slug(self, slug: str) -> MarketEvent:
-        """按 slug 从 Gamma 拉事件元数据 + CLOB 拉价格，归一为内部事件模型。"""
+        """按 slug 从 Gamma 拉事件元数据 + 价格，归一为内部事件模型。
+
+        请求路径默认不逐 outcome 取 CLOB midpoint（`market_detail_use_midpoint`，默认关闭），
+        只做 1 次 Gamma 拉取用内联 outcomePrices，避免多市场事件 midpoint 扇出拖到超时；
+        更新鲜的 midpoint 由后台摄取离线补齐。
+        """
         snapshot_at = datetime.now(timezone.utc)
         payload = self._request(self._gamma_base_url, "/events", params={"slug": slug})
         raw = self._first_event(payload)
         if raw is None:
             raise UpstreamFetchError(f"event not found for slug={slug}")
-        return self._normalize_event(raw, snapshot_at)
+        return self._normalize_event(
+            raw, snapshot_at, use_midpoint=self._detail_use_midpoint
+        )
 
     def fetch_popular_events(self, limit: int | None = None) -> list[MarketEvent]:
-        """按热门规则（成交量降序）拉取默认列表，数量不超过配置的批量上限。"""
+        """按热门规则（成交量降序）拉取默认列表，数量不超过配置的批量上限。
+
+        列表路径：仅 1 次 Gamma 拉取，价格用内联 outcomePrices，不逐 outcome 外呼
+        CLOB（避免整页 N+1 串行拉取拖垮首屏；更新鲜的 midpoint 留给详情页）。
+        """
         batch_limit = limit or settings.market_prefetch_batch_limit
         snapshot_at = datetime.now(timezone.utc)
         payload = self._request(
@@ -259,16 +338,27 @@ class PolymarketClient:
             },
         )
         events = payload if isinstance(payload, list) else []
-        return [self._normalize_event(raw, snapshot_at) for raw in events[:batch_limit]]
+        return [
+            self._normalize_event(raw, snapshot_at, use_midpoint=False)
+            for raw in events[:batch_limit]
+        ]
 
     def fetch_world_cup_events(self, limit: int | None = None) -> list[MarketEvent]:
-        """在同一数据源内按世界杯标签/关键词筛选子集（仅筛选，不引入第三方源）。"""
+        """按 FIFA 世界杯 tag 服务端拉取默认子集（等价 /sports/world-cup 页面口径）。
+
+        用 `tag_slug` 让 Gamma 服务端按世界杯 tag 聚合并按成交量降序返回，避免此前
+        「拉任意 active 再过滤」几乎命中不到世界杯事件的问题；`_matches_world_cup`
+        作服务端结果的防御性二次收敛（不引入第三方源，仅筛选）。
+        """
         batch_limit = limit or settings.market_prefetch_batch_limit
         snapshot_at = datetime.now(timezone.utc)
         payload = self._request(
             self._gamma_base_url,
             "/events",
             params={
+                "tag_slug": settings.world_cup_tag_slug,
+                "order": "volume",
+                "ascending": "false",
                 "active": "true",
                 "closed": "false",
                 "limit": batch_limit,
@@ -277,7 +367,8 @@ class PolymarketClient:
         events = payload if isinstance(payload, list) else []
         matched = [raw for raw in events if _matches_world_cup(raw)]
         return [
-            self._normalize_event(raw, snapshot_at) for raw in matched[:batch_limit]
+            self._normalize_event(raw, snapshot_at, use_midpoint=False)
+            for raw in matched[:batch_limit]
         ]
 
     @staticmethod
@@ -287,6 +378,14 @@ class PolymarketClient:
         if isinstance(payload, dict):
             return payload
         return None
+
+
+def _is_yes_no(outcomes: list) -> bool:
+    """判定是否为标准二元 Yes/No 选项集（大小写与前后空白不敏感）。"""
+    if len(outcomes) != 2:
+        return False
+    normalized = [str(o).strip().lower() for o in outcomes]
+    return normalized == ["yes", "no"]
 
 
 def _matches_world_cup(raw: dict) -> bool:
