@@ -1,0 +1,169 @@
+{
+  "app": {
+    "title": "polyEdge",
+    "tagline": "Polymarket hot–cold bias detector"
+  },
+  "nav": {
+    "eventList": "Events",
+    "ranking": "Bias Ranking",
+    "primaryLabel": "Primary navigation"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "zh": "中文"
+  },
+  "bias": {
+    "label": {
+      "hot": "Overheated · Bubble Risk",
+      "cold": "Underhyped · Value Opportunity",
+      "fair": "Fairly Priced"
+    },
+    "score": "Bias score"
+  },
+  "metrics": {
+    "odds": "Odds",
+    "impliedProbability": "Implied probability",
+    "heat": "Heat",
+    "biasScore": "Bias score"
+  },
+  "snapshot": {
+    "dataTime": "Data snapshot: {{time}}"
+  },
+  "empty": {
+    "title": "Nothing here yet",
+    "description": "There is no data to show right now."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "description": "We couldn't load the data. Please try again.",
+    "retry": "Retry"
+  },
+  "detail": {
+    "back": "Back",
+    "breadcrumbEvents": "Events",
+    "topBias": "{{optionName}} has the highest bias in {{eventName}}",
+    "loading": "Loading event detail…",
+    "empty": "Event not found",
+    "emptyHint": "This event has no data to show.",
+    "backToList": "Back to events",
+    "optionsHeading": "Options",
+    "sortLabel": "Sort by bias score",
+    "sortBiasDesc": "Bubble first",
+    "sortBiasAsc": "Value first",
+    "degradedTradeOnly": "Trade heat only",
+    "degradedTradeOnlyHint": "Social data is insufficient; bias reflects trading heat only.",
+    "notApplicable": "Bias analysis not applicable",
+    "notApplicableHint": "Showing raw option data only.",
+    "excluded": "Excluded",
+    "commentCount_one": "{{count}} comment",
+    "commentCount_other": "{{count}} comments"
+  },
+  "events": {
+    "category": {
+      "label": "Event category",
+      "hot": "Hot",
+      "worldCup": "World Cup"
+    },
+    "card": {
+      "notApplicable": "Bias analysis not applicable",
+      "topBiasOption": "Highest bias: {{optionName}}"
+    },
+    "list": {
+      "loading": "Loading events…",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "empty": "No events yet",
+      "worldCupEmpty": "No World Cup events right now",
+      "switchToHot": "Back to Hot"
+    },
+    "input": {
+      "label": "Find an event",
+      "placeholder": "Paste a Polymarket link or search by name",
+      "submit": "Go",
+      "resolving": "Resolving…",
+      "invalidLink": "That doesn't look like a Polymarket event link.",
+      "notFound": "Event not found",
+      "notFoundHint": "Check the link and try again.",
+      "retry": "Retry"
+    },
+    "search": {
+      "loading": "Searching…",
+      "empty": "No matching events",
+      "emptyHint": "Try a different name.",
+      "localScope": "Searching only within currently indexed events."
+    }
+  },
+  "ranking": {
+    "loading": "Loading bias ranking…",
+    "board": {
+      "label": "Ranking board",
+      "bubble": {
+        "title": "Bubble Risk",
+        "empty": "No bubble-risk options right now"
+      },
+      "underhyped": {
+        "title": "Value Opportunity",
+        "empty": "No value opportunities right now"
+      },
+      "fair": {
+        "title": "Fairly Priced",
+        "empty": "No fairly priced options right now"
+      }
+    },
+    "item": {
+      "aria": "View {{eventTitle}} · {{optionName}} details"
+    }
+  },
+  "share": {
+    "trigger": {
+      "label": "Share",
+      "aria": "Share the bias result for {{name}}"
+    },
+    "dialog": {
+      "title": "Share bias result",
+      "description": "Generate a poster from this result, then share or download it.",
+      "close": "Close",
+      "generating": "Generating poster…",
+      "previewAlt": "Bias result poster preview",
+      "captureErrorTitle": "Couldn't generate the poster",
+      "captureErrorHint": "Something went wrong while rendering the poster. Please try again.",
+      "retry": "Retry"
+    },
+    "action": {
+      "webShare": "Share",
+      "download": "Download image",
+      "copyImage": "Copy image",
+      "copyLink": "Copy link"
+    },
+    "feedback": {
+      "webShareError": "Sharing failed. Try downloading the poster instead.",
+      "downloadSuccess": "Poster downloaded.",
+      "copyImageSuccess": "Image copied to clipboard.",
+      "copyImageError": "Couldn't copy the image. Try downloading it instead.",
+      "copyLinkSuccess": "Link copied.",
+      "copyLinkError": "Couldn't copy the link."
+    },
+    "intent": {
+      "label": "Share to",
+      "text": "Polymarket bias result — {{title}}",
+      "aria": "Share to {{platform}}",
+      "x": "X",
+      "telegram": "Telegram",
+      "facebook": "Facebook",
+      "reddit": "Reddit"
+    },
+    "poster": {
+      "eyebrow": "Bias result",
+      "coreOption": "Core option",
+      "biasScore": "Bias score",
+      "source": "Source: Polymarket",
+      "generatedTime": "Poster generated: {{time}}"
+    }
+  },
+  "placeholder": {
+    "ranking": "The bias ranking will appear here.",
+    "eventDetail": "Event detail will appear here.",
+    "rankingSample": "Open a sample event"
+  }
+}

@@ -1,0 +1,1 @@
+export { SingleEventPage } from './SingleEventPage';

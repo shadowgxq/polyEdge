@@ -1,9 +1,9 @@
 updated_at: '2026-07-06'
 current:
-  title: 执行 后端数据·算法·代理 + 前端外壳基础，产出对外分析 API
-  batch: batch-1
-  wave: wave-1
-  next: 运行 manager-execute-current-batch 执行当前批次（apply：poly-data-integration, bias-algorithm, image-proxy, web-app-shell-i18n）。
+  title: 自动化工作完成 · 待归档
+  batch: null
+  wave: null
+  next: 待归档批次：batch-1, batch-2。归档由 manager-archive-completed 承担，需显式请求（archive / 归档 + batch id）。
 requirements:
   - id: req-poly-data-integration
     title: Polymarket 数据接入·归一·缓存·降级
@@ -90,7 +90,7 @@ requirements:
 openspec:
   - id: poly-data-integration
     title: Polymarket 数据接入与缓存降级
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -105,7 +105,7 @@ openspec:
     depends_on: []
   - id: bias-algorithm
     title: 偏差算法与三分类
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -120,7 +120,7 @@ openspec:
     depends_on: []
   - id: image-proxy
     title: 安全图片代理端点
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -135,7 +135,7 @@ openspec:
     depends_on: []
   - id: analysis-api
     title: 分析结果对外 API
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -152,7 +152,7 @@ openspec:
       - bias-algorithm
   - id: web-app-shell-i18n
     title: 前端外壳·导航·i18n·共享基元
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -167,7 +167,7 @@ openspec:
     depends_on: []
   - id: event-list-and-input
     title: 事件列表与输入页
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -184,7 +184,7 @@ openspec:
       - analysis-api
   - id: single-event-detail
     title: 单事件明细页
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -201,7 +201,7 @@ openspec:
       - analysis-api
   - id: bias-ranking
     title: 偏差排行页
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:
@@ -218,7 +218,7 @@ openspec:
       - analysis-api
   - id: share-poster
     title: 分享海报与分发
-    phase: apply
+    phase: archive
     state: planned
     review: approved
     requirements:

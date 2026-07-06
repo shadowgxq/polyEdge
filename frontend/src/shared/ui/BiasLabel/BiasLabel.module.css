@@ -1,0 +1,32 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hot {
+  background-color: var(--color-hot-soft);
+  border-color: var(--color-hot-border);
+  color: var(--color-hot-text);
+}
+
+.cold {
+  background-color: var(--color-cold-soft);
+  border-color: var(--color-cold-border);
+  color: var(--color-cold-text);
+}
+
+.fair {
+  background-color: var(--color-fair-soft);
+  border-color: var(--color-fair-border);
+  color: var(--color-fair-text);
+}

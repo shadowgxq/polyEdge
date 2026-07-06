@@ -1,0 +1,250 @@
+{
+  "cases": [
+    {
+      "name": "normal_multi_option",
+      "note": "正常多选项（默认参数，含 social，未退化）；数值人工精算见 tasks 1.13",
+      "params": null,
+      "event": {
+        "event_id": "evt-normal",
+        "comment_count": 12,
+        "options": [
+          {"option_id": "A", "label": "Alpha", "price": 55, "volume": 60, "liquidity": 60, "volume24hr": 60, "traders": 50},
+          {"option_id": "B", "label": "Beta", "price": 30, "volume": 30, "liquidity": 30, "volume24hr": 30, "traders": 30},
+          {"option_id": "C", "label": "Gamma", "price": 15, "volume": 10, "liquidity": 10, "volume24hr": 10, "traders": 20}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": false,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": -3, "category": "fairly_priced"},
+          {"option_id": "B", "excluded": false, "bias": 1, "category": "fairly_priced"},
+          {"option_id": "C", "excluded": false, "bias": 2, "category": "fairly_priced"}
+        ]
+      }
+    },
+    {
+      "name": "threshold_boundary_pos_neg",
+      "note": "阈值边界 +15 / -15（恰达阈值入泡沫 / 冷门）；w_vol=1 隔离交易分量，退化",
+      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "event": {
+        "event_id": "evt-threshold",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 50, "volume": 65, "traders": null},
+          {"option_id": "B", "price": 50, "volume": 35, "traders": null}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 15, "category": "bubble_risk"},
+          {"option_id": "B", "excluded": false, "bias": -15, "category": "value_opportunity"}
+        ]
+      }
+    },
+    {
+      "name": "threshold_boundary_inside",
+      "note": "阈值内 14（-T<bias<+T 为合理）",
+      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "event": {
+        "event_id": "evt-threshold-inside",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 50, "volume": 64, "traders": null},
+          {"option_id": "B", "price": 50, "volume": 36, "traders": null}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 14, "category": "fairly_priced"},
+          {"option_id": "B", "excluded": false, "bias": -14, "category": "fairly_priced"}
+        ]
+      }
+    },
+    {
+      "name": "round_half_up_boundary",
+      "note": "round 半值向上进位 d_i*100=14.5->15 / -14.5->-15（防 banker's rounding）",
+      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "event": {
+        "event_id": "evt-round-half",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 500, "volume": 645, "traders": null},
+          {"option_id": "B", "price": 500, "volume": 355, "traders": null}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 15, "category": "bubble_risk"},
+          {"option_id": "B", "excluded": false, "bias": -15, "category": "value_opportunity"}
+        ]
+      }
+    },
+    {
+      "name": "clamp_extreme",
+      "note": "极值 clamp 边界，bias 触及 +100 / -100",
+      "params": {"w_vol": 1, "w_liq": 0, "w_24h": 0, "w_turn": 0},
+      "event": {
+        "event_id": "evt-clamp",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 1, "volume": 100, "traders": null},
+          {"option_id": "B", "price": 999, "volume": 0, "traders": null}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 100, "category": "bubble_risk"},
+          {"option_id": "B", "excluded": false, "bias": -100, "category": "value_opportunity"}
+        ]
+      }
+    },
+    {
+      "name": "zero_guard_volume_and_component_sum",
+      "note": "除零兜底：volume=0 换手率记 0，成交量/24h 分量 Σ=0 归一记 0，不产 NaN",
+      "params": null,
+      "event": {
+        "event_id": "evt-zero-volume",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 50, "volume": 0, "liquidity": 60, "volume24hr": 0, "traders": 50},
+          {"option_id": "B", "price": 50, "volume": 0, "liquidity": 40, "volume24hr": 0, "traders": 50}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": false,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 4, "category": "fairly_priced"},
+          {"option_id": "B", "excluded": false, "bias": -4, "category": "fairly_priced"}
+        ]
+      }
+    },
+    {
+      "name": "zero_guard_total_heat",
+      "note": "除零兜底：Σh=0 时 hs_i=1/n 均分，不产 NaN（退化且所有交易分量为 0）",
+      "params": null,
+      "event": {
+        "event_id": "evt-zero-heat",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 50, "volume": 0, "liquidity": 0, "volume24hr": 0, "traders": null},
+          {"option_id": "B", "price": 50, "volume": 0, "liquidity": 0, "volume24hr": 0, "traders": null}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 0, "category": "fairly_priced"},
+          {"option_id": "B", "excluded": false, "bias": 0, "category": "fairly_priced"}
+        ]
+      }
+    },
+    {
+      "name": "participation_degradation",
+      "note": "参与数据退化：任一选项 traders=null -> 全事件 h_i=trade_i（等价 β=0）",
+      "params": null,
+      "event": {
+        "event_id": "evt-degraded",
+        "comment_count": 3,
+        "options": [
+          {"option_id": "A", "price": 40, "volume": 60, "liquidity": 60, "volume24hr": 60, "traders": 100},
+          {"option_id": "B", "price": 35, "volume": 30, "liquidity": 30, "volume24hr": 30, "traders": null},
+          {"option_id": "C", "price": 25, "volume": 10, "liquidity": 10, "volume24hr": 10, "traders": 50}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": true,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": 13, "category": "fairly_priced"},
+          {"option_id": "B", "excluded": false, "bias": -4, "category": "fairly_priced"},
+          {"option_id": "C", "excluded": false, "bias": -9, "category": "fairly_priced"}
+        ]
+      }
+    },
+    {
+      "name": "reexclude_invalid_then_renorm",
+      "note": "无效选项（price=0）排除后 p_i / hs_i 在剩余有效集重归一，Σ=1",
+      "params": null,
+      "event": {
+        "event_id": "evt-reexclude",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 0, "volume": 50, "liquidity": 50, "volume24hr": 50, "traders": 10},
+          {"option_id": "B", "price": 60, "volume": 30, "liquidity": 30, "volume24hr": 30, "traders": 30},
+          {"option_id": "C", "price": 40, "volume": 20, "liquidity": 20, "volume24hr": 20, "traders": 20}
+        ]
+      },
+      "expected": {
+        "applicable": true,
+        "not_applicable_reason": null,
+        "degraded_trade_only": false,
+        "options": [
+          {"option_id": "A", "excluded": true, "bias": null, "category": null},
+          {"option_id": "B", "excluded": false, "bias": -2, "category": "fairly_priced"},
+          {"option_id": "C", "excluded": false, "bias": 2, "category": "fairly_priced"}
+        ]
+      }
+    },
+    {
+      "name": "not_applicable_single_option",
+      "note": "仅 1 个有效选项 -> 不适用偏差分析，仅透传",
+      "params": null,
+      "event": {
+        "event_id": "evt-single",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 70, "volume": 50, "liquidity": 50, "volume24hr": 50, "traders": 50}
+        ]
+      },
+      "expected": {
+        "applicable": false,
+        "not_applicable_reason": "single_option",
+        "degraded_trade_only": false,
+        "options": [
+          {"option_id": "A", "excluded": false, "bias": null, "category": null}
+        ]
+      }
+    },
+    {
+      "name": "not_applicable_no_valid_price",
+      "note": "Σ price_j = 0（价格全 0）-> 不适用偏差分析",
+      "params": null,
+      "event": {
+        "event_id": "evt-noprice",
+        "comment_count": null,
+        "options": [
+          {"option_id": "A", "price": 0, "volume": 50, "liquidity": 50, "volume24hr": 50, "traders": 50},
+          {"option_id": "B", "price": 0, "volume": 40, "liquidity": 40, "volume24hr": 40, "traders": 40}
+        ]
+      },
+      "expected": {
+        "applicable": false,
+        "not_applicable_reason": "no_valid_price",
+        "degraded_trade_only": false,
+        "options": [
+          {"option_id": "A", "excluded": true, "bias": null, "category": null},
+          {"option_id": "B", "excluded": true, "bias": null, "category": null}
+        ]
+      }
+    }
+  ]
+}

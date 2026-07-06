@@ -1,0 +1,12 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.5rem;
+  overflow-wrap: anywhere;
+}

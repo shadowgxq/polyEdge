@@ -1,0 +1,168 @@
+{
+  "app": {
+    "title": "polyEdge",
+    "tagline": "Polymarket 热门-冷门偏差检测器"
+  },
+  "nav": {
+    "eventList": "事件列表",
+    "ranking": "偏差排行",
+    "primaryLabel": "主导航"
+  },
+  "language": {
+    "label": "语言",
+    "en": "English",
+    "zh": "中文"
+  },
+  "bias": {
+    "label": {
+      "hot": "高热度·泡沫风险",
+      "cold": "低热度·冷门机会",
+      "fair": "合理"
+    },
+    "score": "偏差评分"
+  },
+  "metrics": {
+    "odds": "赔率",
+    "impliedProbability": "隐含概率",
+    "heat": "热度",
+    "biasScore": "偏差评分"
+  },
+  "snapshot": {
+    "dataTime": "数据快照：{{time}}"
+  },
+  "empty": {
+    "title": "暂无内容",
+    "description": "当前没有可展示的数据。"
+  },
+  "error": {
+    "title": "出错了",
+    "description": "数据加载失败，请重试。",
+    "retry": "重试"
+  },
+  "detail": {
+    "back": "返回",
+    "breadcrumbEvents": "事件列表",
+    "topBias": "{{eventName}} 中 {{optionName}} 偏差最高",
+    "loading": "正在加载事件明细…",
+    "empty": "未找到该事件",
+    "emptyHint": "该事件暂无可展示的数据。",
+    "backToList": "返回事件列表",
+    "optionsHeading": "选项",
+    "sortLabel": "按偏差评分排序",
+    "sortBiasDesc": "泡沫优先",
+    "sortBiasAsc": "冷门优先",
+    "degradedTradeOnly": "纯交易热度",
+    "degradedTradeOnlyHint": "社交数据不足，偏差仅反映交易热度。",
+    "notApplicable": "不适用偏差分析",
+    "notApplicableHint": "仅展示原始选项数据。",
+    "excluded": "已排除",
+    "commentCount_other": "{{count}} 条讨论"
+  },
+  "events": {
+    "category": {
+      "label": "事件分类",
+      "hot": "热门",
+      "worldCup": "世界杯"
+    },
+    "card": {
+      "notApplicable": "不适用偏差分析",
+      "topBiasOption": "偏差最高：{{optionName}}"
+    },
+    "list": {
+      "loading": "正在加载事件…",
+      "loadMore": "加载更多",
+      "loadingMore": "加载中…",
+      "empty": "暂无事件",
+      "worldCupEmpty": "当前无世界杯相关事件",
+      "switchToHot": "切回热门"
+    },
+    "input": {
+      "label": "查找事件",
+      "placeholder": "粘贴 Polymarket 链接或按名称搜索",
+      "submit": "前往",
+      "resolving": "解析中…",
+      "invalidLink": "这不是有效的 Polymarket 事件链接。",
+      "notFound": "未找到该事件",
+      "notFoundHint": "请检查链接后重试。",
+      "retry": "重试"
+    },
+    "search": {
+      "loading": "搜索中…",
+      "empty": "未搜到相关事件",
+      "emptyHint": "换个名称再试试。",
+      "localScope": "仅在当前收录事件范围内搜索。"
+    }
+  },
+  "ranking": {
+    "loading": "正在加载偏差排行…",
+    "board": {
+      "label": "排行榜单",
+      "bubble": {
+        "title": "泡沫风险榜",
+        "empty": "暂无泡沫风险选项"
+      },
+      "underhyped": {
+        "title": "冷门机会榜",
+        "empty": "暂无冷门机会选项"
+      },
+      "fair": {
+        "title": "合理列表",
+        "empty": "暂无合理选项"
+      }
+    },
+    "item": {
+      "aria": "查看 {{eventTitle}} · {{optionName}} 明细"
+    }
+  },
+  "share": {
+    "trigger": {
+      "label": "分享",
+      "aria": "分享 {{name}} 的偏差结果"
+    },
+    "dialog": {
+      "title": "分享偏差结果",
+      "description": "将当前结果生成海报，然后分享或下载。",
+      "close": "关闭",
+      "generating": "正在生成海报…",
+      "previewAlt": "偏差结果海报预览",
+      "captureErrorTitle": "海报生成失败",
+      "captureErrorHint": "渲染海报时出现问题，请重试。",
+      "retry": "重试"
+    },
+    "action": {
+      "webShare": "分享",
+      "download": "下载图片",
+      "copyImage": "复制图片",
+      "copyLink": "复制链接"
+    },
+    "feedback": {
+      "webShareError": "分享失败，请改用下载海报。",
+      "downloadSuccess": "海报已下载。",
+      "copyImageSuccess": "图片已复制到剪贴板。",
+      "copyImageError": "图片复制失败，请改用下载。",
+      "copyLinkSuccess": "链接已复制。",
+      "copyLinkError": "链接复制失败。"
+    },
+    "intent": {
+      "label": "分享到",
+      "text": "Polymarket 偏差结果 — {{title}}",
+      "aria": "分享到 {{platform}}",
+      "x": "X",
+      "telegram": "Telegram",
+      "facebook": "Facebook",
+      "reddit": "Reddit"
+    },
+    "poster": {
+      "eyebrow": "偏差结果",
+      "coreOption": "核心选项",
+      "biasScore": "偏差评分",
+      "source": "来源：Polymarket",
+      "generatedTime": "海报生成时间：{{time}}"
+    }
+  },
+  "placeholder": {
+    "ranking": "偏差排行将在此展示。",
+    "eventDetail": "单事件明细将在此展示。",
+    "rankingSample": "打开示例事件"
+  }
+}

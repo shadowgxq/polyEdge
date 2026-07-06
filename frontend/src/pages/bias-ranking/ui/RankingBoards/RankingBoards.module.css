@@ -1,0 +1,79 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+/* 分段 Tab 仅窄屏出现（宽屏三榜并列，无需切换）。 */
+.segments {
+  display: none;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.column {
+  min-width: 0;
+}
+
+/*
+ * 窄屏基线 430px（--breakpoint-mobile，AC-9）。
+ * CSS media query 无法读取 custom property，故以 token 值作事实源写字面量。
+ */
+@media (max-width: 430px) {
+  .segments {
+    display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    min-width: 0;
+    gap: var(--space-2xs);
+    padding: var(--space-2xs);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+  }
+
+  .segment {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: var(--space-xs) var(--space-md);
+    border: none;
+    border-radius: var(--radius-pill);
+    background-color: transparent;
+    color: var(--color-muted);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+  }
+
+  .segment:hover {
+    color: var(--color-text);
+  }
+
+  .segmentActive {
+    background-color: var(--color-brand);
+    color: var(--color-brand-ink);
+  }
+
+  .segmentActive:hover {
+    color: var(--color-brand-ink);
+  }
+
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .column {
+    display: none;
+  }
+
+  .columnActive {
+    display: block;
+  }
+}

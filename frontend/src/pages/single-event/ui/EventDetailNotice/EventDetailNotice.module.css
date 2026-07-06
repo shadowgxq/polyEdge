@@ -1,0 +1,21 @@
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-warn-soft);
+  border-radius: var(--radius-md);
+}
+
+.title {
+  font-weight: 600;
+  color: var(--color-warn-text);
+  overflow-wrap: anywhere;
+}
+
+.description {
+  font-size: 0.8125rem;
+  color: var(--color-warn-text);
+  overflow-wrap: anywhere;
+}

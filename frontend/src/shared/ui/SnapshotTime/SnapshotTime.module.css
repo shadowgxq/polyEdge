@@ -1,0 +1,7 @@
+.snapshot {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}

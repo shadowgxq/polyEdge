@@ -1,11 +1,20 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
-import { HomePage } from '../../pages/home/HomePage';
+import { BiasRankingPage } from '../../pages/bias-ranking';
+import { EventsPage } from '../../pages/events';
+import { SingleEventPage } from '../../pages/single-event';
+import { AppShell } from '../../widgets/app-shell';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: <AppShell />,
+    children: [
+      { index: true, element: <Navigate to="/events" replace /> },
+      { path: 'events', element: <EventsPage /> },
+      { path: 'events/:eventId', element: <SingleEventPage /> },
+      { path: 'ranking', element: <BiasRankingPage /> },
+    ],
   },
 ]);
 

@@ -1,0 +1,83 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.headerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: var(--layout-max-width);
+  min-height: var(--header-height);
+  margin: 0 auto;
+  padding: var(--space-xs) var(--layout-gutter);
+}
+
+.brand {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--color-text);
+}
+
+.nav {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--color-muted);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  background-color: var(--color-brand-soft);
+  color: var(--color-brand);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tabActive {
+  background-color: var(--color-brand);
+  color: var(--color-brand-ink);
+}
+
+.tabActive:hover {
+  background-color: var(--color-brand-hover);
+  color: var(--color-brand-ink);
+}
+
+.main {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.content {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--layout-gutter);
+}
