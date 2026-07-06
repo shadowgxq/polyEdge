@@ -1,0 +1,48 @@
+# ===== 仓库级忽略（跨 frontend / backend） =====
+# 子目录 frontend/.gitignore、backend/.gitignore 各自覆盖其技术栈细项，
+# 本文件只补全 OS / 编辑器 / 环境 / 通用产物 等仓库级忽略。
+
+# ----- OS -----
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ----- 编辑器 / IDE -----
+.idea/
+*.swp
+*.swo
+*~
+# 保留可共享的 VS Code 配置，仅忽略个人级文件
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# ----- 本地 agent / 工具设置 -----
+.claude/
+.codex/
+.agents/
+
+# ----- 环境变量 -----
+.env
+.env.*
+!.env.example
+
+# ----- 日志 / 临时 -----
+*.log
+logs/
+tmp/
+.cache/
+
+# ----- Node（安全网，防止根或新子目录出现） -----
+node_modules/
+dist/
+*.local
+
+# ----- Python（安全网） -----
+__pycache__/
+*.py[oc]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/

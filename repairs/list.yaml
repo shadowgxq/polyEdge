@@ -1,0 +1,33 @@
+version: 1
+updated_at: 2026-06-15
+
+current_run:
+  run_id: run-20260615-001
+  mode: selected_files
+  max_subagents: 3
+  started_at: 2026-06-15
+  updated_at: 2026-06-15
+  notes: >
+    Wave 1: Bundle[001,002] parallel with 003.
+    001+002 → fixed. 003 → blocked (no typo identified).
+
+selected:
+  files:
+    - repairs/queue/repair-20260615-001.md
+    - repairs/queue/repair-20260615-002.md
+    - repairs/queue/repair-20260615-003.md
+
+processing: []
+
+fixed_waiting_user_verification:
+  - repairs/queue/repair-20260615-001.md
+  - repairs/queue/repair-20260615-002.md
+
+verified_waiting_archive: []
+
+blocked:
+  - repairs/queue/repair-20260615-003.md
+
+archived: []
+
+history: []

@@ -1,0 +1,106 @@
+/* ============================================================================
+ * polyEdge Design Tokens —— 样式单一事实源
+ * 主题：浅色 · 靛蓝（Data Editorial / Indigo）
+ *
+ * 使用规范（硬约束）：
+ *   1. 组件样式只允许引用本文件的 token，禁止硬编码颜色 / 圆角 / 阴影。
+ *   2. 颜色语义分层，按用途取值，不要跨语义借色：
+ *        文本    → --color-text / --color-muted / --color-subtle
+ *        面板    → --color-surface / --color-surface-raised（+ 阴影表达层级）
+ *        品牌/交互 → --color-brand*（链接、主按钮、选中态、焦点环）
+ *        信号(核心) → --color-hot|cold|fair-*（偏差三分类，见下）
+ *        系统态   → --color-info|warn|danger-*（提示 / 降级 / 错误）
+ *   3. 信号色区分「core」与「text」两档：
+ *        *-core → 填充、圆点、进度条、图标、边框强调（大色块，允许高饱和）
+ *        *-text → 承载文字的场景（chip 文字、评分数字），已加深至 WCAG AA ≥4.5:1
+ *        *-soft → 极浅底色（chip / 标注背景）
+ *   4. 偏差三分类语义固定（口径见 docs/prd 的 bias-algorithm.md）：
+ *        hot  = 高热度·泡沫风险（bias 为正 / 过热）
+ *        cold = 低热度·冷门机会（bias 为负 / 被低估）
+ *        fair = 合理（|bias| < 阈值，近 0，视觉最低调、不抢眼）
+ * ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* —— 字体 —— */
+  /* sans：正文与标题，系统安全栈（如需品牌展示字体可后续引入 Bricolage Grotesque 并新增 --font-display） */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* mono：赔率、热度、偏差评分等数据，等宽 + tabular-nums 保证数字对齐 */
+  --font-mono:
+    ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* —— 基底 / 面板 —— */
+  --color-background: #f4f2ec;      /* 页面暖浅灰底，衬托白色面板浮起 */
+  --color-surface: #ffffff;         /* 卡片、面板 */
+  --color-surface-raised: #ffffff;  /* 抬升层（弹层 / hover），靠 --shadow-pop 区分层级 */
+  --color-border: #e6e2d9;          /* 常规分隔线、卡片描边 */
+  --color-border-strong: #d0cabd;   /* 强调边框、hover 描边、坐标轴 */
+
+  /* —— 文本 —— */
+  --color-text: #1a1d24;            /* 主文本（≈16.9:1） */
+  --color-muted: #5f6672;           /* 次要文本、说明、数据时间（≈5.5:1） */
+  --color-subtle: #79818e;          /* 占位、坐标刻度等装饰文字（≈3.6:1，不承载关键信息） */
+
+  /* —— 品牌 / 交互 —— */
+  --color-brand: #2f5fe0;           /* 链接、主按钮、选中 Tab（白字 on brand ≈5.5:1） */
+  --color-brand-hover: #244fc4;     /* 主交互 hover / active */
+  --color-brand-ink: #ffffff;       /* 品牌实色之上的文字 */
+  --color-brand-soft: rgba(47, 95, 224, 0.10); /* 次要按钮 / 选中项浅底 */
+  --color-focus: #2f5fe0;           /* 焦点环 outline */
+
+  /* —— 信号 · 泡沫风险（hot / 正偏差） —— */
+  --color-hot-core: #e2493a;        /* 填充 / 圆点 / 进度条（偏橙红＝过热） */
+  --color-hot-text: #c62f22;        /* 文字 / 评分数字（≈5.4:1） */
+  --color-hot-soft: rgba(226, 73, 58, 0.10);
+  --color-hot-border: rgba(226, 73, 58, 0.32);
+
+  /* —— 信号 · 冷门机会（cold / 负偏差） —— */
+  --color-cold-core: #0e9f8e;       /* 填充 / 圆点 / 进度条（青绿＝被低估的价值） */
+  --color-cold-text: #0a7566;       /* 文字 / 评分数字（≈5.6:1） */
+  --color-cold-soft: rgba(14, 159, 142, 0.12);
+  --color-cold-border: rgba(14, 159, 142, 0.32);
+
+  /* —— 信号 · 合理（fair / 近 0） —— */
+  --color-fair-core: #6b7480;       /* 中性灰蓝，最低调 */
+  --color-fair-text: #5c6470;       /* 文字 / 评分数字（≈5.2:1） */
+  --color-fair-soft: rgba(107, 116, 128, 0.10);
+  --color-fair-border: rgba(107, 116, 128, 0.28);
+
+  /* —— 系统态 · 提示（info） —— */
+  /* 语义＝中性信息（数据快照说明等）。仅用「soft 底 + text」表达，不做成按钮形，避免与可点击的 brand 混淆。 */
+  --color-info-text: #2f5fe0;
+  --color-info-soft: rgba(47, 95, 224, 0.10);
+
+  /* —— 系统态 · 降级警示（warn） —— */
+  /* 语义＝数据降级（社交数据不足 / 纯交易热度 / 不适用偏差分析）。 */
+  --color-warn-core: #b5730b;
+  --color-warn-text: #8f5b09;       /* ≈5.3:1 */
+  --color-warn-soft: rgba(181, 115, 11, 0.12);
+
+  /* —— 系统态 · 错误（danger） —— */
+  /* 语义＝系统 / 请求错误（Polymarket 拉取失败、输入无法解析）。纯报警红，与「泡沫 hot」刻意区分。 */
+  --color-danger-text: #d92d20;     /* ≈4.9:1 */
+  --color-danger-soft: rgba(217, 45, 32, 0.10);
+
+  /* —— 偏差评分轴（diverging）：冷门 ← 合理 → 泡沫 —— */
+  --bias-track: linear-gradient(
+    90deg,
+    var(--color-cold-core) 0%,
+    var(--color-fair-core) 50%,
+    var(--color-hot-core) 100%
+  );
+
+  /* —— 圆角 —— */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* —— 阴影（层级表达）—— */
+  --shadow-card: 0 1px 2px rgba(30, 32, 40, 0.04),
+    0 12px 28px -20px rgba(30, 32, 40, 0.20);
+  --shadow-pop: 0 8px 24px -8px rgba(30, 32, 40, 0.18);
+}

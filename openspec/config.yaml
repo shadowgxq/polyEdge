@@ -1,0 +1,24 @@
+schema: spec-driven
+
+# 项目架构 / 技术栈 / 前端规范 / 后端分层 / 数据与接口契约已在根 CLAUDE.md（含其中指针）说明，
+# Claude Code 会话已加载，这里不重复（已知取舍：换非 Claude Code 工具生成 artifact 时需回补）。
+# context 只留 artifact 生成专属、CLAUDE.md 未覆盖的需求源引用约定。
+context: |
+  需求源：docs/prd/polymarket-bias-detector/ 专题目录——
+  主 PRD `PRD.md` 按 `## N.` / `### N.M` 编号分节；
+  算法口径见 `bias-algorithm.md`（`## N.` 编号），数据口径见 `data-source.md`（`## N.` 编号）。
+  artifact 中引用需求写「PRD §N」或「PRD §N.M」（指 PRD.md 内该节），
+  引用算法口径写「bias-algorithm §N」，引用数据口径写「data-source §N」。
+  判断与取舍须可回溯到具体小节，不凭空发挥。
+
+# Per-artifact rules：键必须是 schema 的 artifact id（proposal / specs / design / tasks）。
+rules:
+  proposal:
+    - Capabilities 按「可独立验收的能力」拆分；先查 openspec/specs/ 与在途 changes 复用既有 capability 名；跨功能共享的数据契约（如 market-data 事件/选项数据、bias-scoring 偏差评分口径）单独成 capability。
+  specs:
+    - 每个 requirement 标注来源「PRD §N」；偏差判定 / 数据降级类 requirement 追加标注「bias-algorithm §N」或「data-source §N」，便于验收回溯。
+  design:
+    - 每个 change 都创建 design.md；只写前后端核心实现方案，范围限定难点、核心点与跨端契约；涉及偏差计算的 change 必须锚定 bias-algorithm.md 的公式与参数口径，不自拟算法。
+  tasks:
+    - 按 `## 后端` / `## 前端` 分节；单端 change 可只保留相关一节。
+    - 跨端任务两节各写一条：后端节标提供的接口（路径 + 出入参），前端节标「依赖后端接口 X」。
