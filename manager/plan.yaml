@@ -1,9 +1,264 @@
-updated_at: 'YYYY-MM-DD'
+updated_at: '2026-07-06'
 current:
-  title: 未规划 Manager 批次
-  batch: null
-  wave: null
-  next: 从 PRD 或需求文档生成 manager/plan.yaml 后，再运行 Manager。
-requirements: []
-openspec: []
-batches: []
+  title: 执行 后端数据·算法·代理 + 前端外壳基础，产出对外分析 API
+  batch: batch-1
+  wave: wave-1
+  next: 运行 manager-execute-current-batch 执行当前批次（apply：poly-data-integration, bias-algorithm, image-proxy, web-app-shell-i18n）。
+requirements:
+  - id: req-poly-data-integration
+    title: Polymarket 数据接入·归一·缓存·降级
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 对接 Polymarket Gamma + CLOB，拉取事件/选项元数据与价格并归一到内部事件/选项模型（口径见 data-source.md 第 2 节）。
+      - 默认列表（热门 + 世界杯筛选子集）由后端定时预取入缓存；元数据/价格分层 TTL；结果一律带数据快照时间。
+      - 上游限流采用指数退避重试；拉取失败优先回退缓存快照并标注时间，无缓存返回错误态，不静默失败（AC-5 数据侧、5.2/5.3）。
+      - 「无 per-option 参与数据」判定谓词：缺失/null 视为无（触发退化），值为 0 视为有效 0。
+  - id: req-bias-algorithm
+    title: 偏差算法与三分类（纯规则）
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 实现 p_i / trade_i（含换手率四项份额归一）/ social_i（平台内参与，非社媒）/ h_i / hs_i / bias_i 全链路口径（bias-algorithm 第 3 节）。
+      - round 采用半值向上进位、bias_i clamp 到 [-100,100]；三分类阈值 T 默认 15，三档互斥无交集。
+      - 除零兜底（分量 Σ=0 / Σh=0 / volume=0）、任一选项缺 per-option 参与数据则全事件退化为纯交易热度、无效选项排除后重归一。
+      - 提供固定输入→期望 bias_i/标签的黄金 fixture 作为回归基准（AC-3；真实数据仅冒烟）。
+      - 参数（α/β、四项权重、w_depth、T）可配置，norm 函数钉死为份额型。
+  - id: req-analysis-api
+    title: 分析结果对外 API（列表/明细/输入/排行）
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 默认事件列表接口区分 Polymarket 热门与世界杯两个分类，返回事件/选项/赔率/偏差结果（AC-1）。
+      - 单事件明细接口返回每个可分析选项的赔率/热度/偏差评分/三分类标签与降级标注、事件级 commentCount 与数据快照时间。
+      - 事件输入接口支持 slug 解析与名称搜索（搜索不可用时在已缓存事件集本地模糊匹配并标注范围）（AC-2）。
+      - 排行接口对当前 Tab 默认列表聚合出泡沫/冷门/合理三榜，榜单项含事件归属可回跳（AC-4）。
+      - 统一走 ApiResponse[T]/success_response，业务错误抛 BusinessException；实时路径按 IP/会话施加服务端限流。
+  - id: req-image-proxy
+    title: 安全图片代理（防 SSRF）
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: medium
+    acceptance:
+      - 提供后端同源图片代理端点，仅供海报出图加载 Polymarket 图片以规避 canvas 跨域污染。
+      - 安全约束：域名白名单（仅 Polymarket 图片域）、仅 https、仅 image/* 内容类型、限制响应大小与超时、禁止跨域重定向（data-source 第 3 节）。
+      - 不改变数据口径，仅转发公开静态图片资源。
+  - id: req-app-shell-i18n
+    title: 应用外壳·IA 导航·i18n·共享 UI 基元
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 首页两个顶层 Tab（事件列表 / 偏差排行），默认进入事件列表；单事件明细提供面包屑/返回回到来源，榜单项可回跳单事件（4.0）。
+      - i18n 支持 English + 中文，默认 English，可切换且刷新后保持（本地存储）；市场内容不翻译，含市场内容的句子用带占位符插值 key（4.6/5.4、AC-8）。
+      - 提供共享偏差展示基元（偏差标签/选项指标行/快照时间标注）与空态/错误态组件，供列表/明细/排行/分享复用。
+      - 网络请求经 shared/api 统一 requestClient，服务端状态经 Query 缓存承载；样式只用 tokens.css，响应式基座满足 ≤430px 无横向溢出（AC-9 基座）。
+  - id: req-event-list-input
+    title: 事件列表与事件输入
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 默认列表分「Polymarket 热门」「世界杯赛事」两个分类 Tab，事件卡展示事件名 + 各选项赔率 + 事件级概览偏差标签（取事件内 |bias| 最大选项的标签并标注该选项名）（AC-1、4.1）。
+      - 三种事件输入方式（列表选 / 世界杯选 / 手动输入链接或名称）均可定位到一个事件；链接前端仅做 URL 形态校验，slug 提取交后端（AC-2、4.2）。
+      - 世界杯无匹配事件、手动输入无法解析/搜不到、列表规模上限（建议 20/页）均给明确空态与重试引导，不静默失败（AC-5 前端侧）。
+      - 全流程只读，无任何交易/下单/钱包入口（AC-7）；≤430px 窄屏无横向滚动、超长英文名截断/换行（AC-9）。
+  - id: req-event-detail
+    title: 单事件偏差明细
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 列出事件全部选项，每个可分析选项展示赔率（隐含概率）、热度、偏差评分、三分类标签，口径与 bias-algorithm 一致（AC-3、4.3）。
+      - 支持按偏差评分排序，泡沫风险与冷门机会选项有明显视觉区分。
+      - 数据完整度：任一选项缺 per-option 参与数据时标注「纯交易热度」；单选项/缺价格标注「不适用偏差分析」；展示事件级 commentCount 关注度标签与数据快照时间（AC-5、5.2）。
+      - ≤430px 窄屏无溢出、超长文本截断处理（AC-9）；只读无交易入口（AC-7）。
+  - id: req-bias-ranking
+    title: 多事件偏差排行
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: high
+    acceptance:
+      - 对当前 Tab 默认事件列表聚合，输出高热度·泡沫风险榜、低热度·冷门机会榜、合理选项列表，三榜与阈值 T 对齐、互斥无交集（AC-4、4.4）。
+      - 每条榜单项标注所属事件、选项、赔率、偏差评分，可点击回跳对应单事件明细；每榜展示 TopN（建议 10）。
+      - 某榜无入榜项时该榜展示空态，其余两榜正常，不整页报错（AC-5）。
+      - 窄屏采用卡片纵向排列 + 三榜分段 Tab，避免横向溢出（AC-9）。
+  - id: req-share-poster
+    title: 分享海报与分发
+    source: docs/prd/polymarket-bias-detector/PRD.md
+    priority: medium
+    acceptance:
+      - 对单事件结果或某个榜单，前端受控离屏渲染出图（主库 html-to-image），内联字体、DPR≥2、出图前等待 document.fonts.ready，海报内 Polymarket 图片经后端图片代理同源加载（4.5）。
+      - 卡片含标题、核心选项与偏差标签、偏差评分、区分展示的数据快照时间与海报生成时间、来源标注，文案跟随界面语言（AC-6）。
+      - 移动端经 Web Share 分享图片文件；桌面端下载图片、复制链接、intent 分享到 X/Telegram/Facebook/Reddit；复制图片到剪贴板为条件能力（不支持则隐藏并回退下载）。
+      - 不支持 Web Share/分享文件时退化为下载 + 复制链接；出图或分享失败均有明确错误态与重试，不静默失败（AC-5、AC-6）。
+openspec:
+  - id: poly-data-integration
+    title: Polymarket 数据接入与缓存降级
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-poly-data-integration
+    path: openspec/changes/poly-data-integration
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/poly-data-integration/tasks.md
+    depends_on: []
+  - id: bias-algorithm
+    title: 偏差算法与三分类
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-bias-algorithm
+    path: openspec/changes/bias-algorithm
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/bias-algorithm/tasks.md
+    depends_on: []
+  - id: image-proxy
+    title: 安全图片代理端点
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-image-proxy
+    path: openspec/changes/image-proxy
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/image-proxy/tasks.md
+    depends_on: []
+  - id: analysis-api
+    title: 分析结果对外 API
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-analysis-api
+    path: openspec/changes/analysis-api
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/analysis-api/tasks.md
+    depends_on:
+      - poly-data-integration
+      - bias-algorithm
+  - id: web-app-shell-i18n
+    title: 前端外壳·导航·i18n·共享基元
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-app-shell-i18n
+    path: openspec/changes/web-app-shell-i18n
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/web-app-shell-i18n/tasks.md
+    depends_on: []
+  - id: event-list-and-input
+    title: 事件列表与输入页
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-event-list-input
+    path: openspec/changes/event-list-and-input
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/event-list-and-input/tasks.md
+    depends_on:
+      - web-app-shell-i18n
+      - analysis-api
+  - id: single-event-detail
+    title: 单事件明细页
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-event-detail
+    path: openspec/changes/single-event-detail
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/single-event-detail/tasks.md
+    depends_on:
+      - web-app-shell-i18n
+      - analysis-api
+  - id: bias-ranking
+    title: 偏差排行页
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-bias-ranking
+    path: openspec/changes/bias-ranking
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/bias-ranking/tasks.md
+    depends_on:
+      - web-app-shell-i18n
+      - analysis-api
+  - id: share-poster
+    title: 分享海报与分发
+    phase: apply
+    state: planned
+    review: approved
+    requirements:
+      - req-share-poster
+    path: openspec/changes/share-poster
+    artifacts:
+      - proposal.md
+      - design.md
+      - specs/**
+      - tasks.md
+    tasks: openspec/changes/share-poster/tasks.md
+    depends_on:
+      - single-event-detail
+      - bias-ranking
+      - image-proxy
+batches:
+  - id: batch-1
+    goal: 后端数据·算法·代理 + 前端外壳基础，产出对外分析 API
+    waves:
+      - id: wave-1
+        parallel: true
+        openspec:
+          - poly-data-integration
+          - bias-algorithm
+          - image-proxy
+          - web-app-shell-i18n
+      - id: wave-2
+        parallel: false
+        openspec:
+          - analysis-api
+  - id: batch-2
+    goal: 前端功能页面与分享闭环
+    waves:
+      - id: wave-1
+        parallel: true
+        openspec:
+          - event-list-and-input
+          - single-event-detail
+          - bias-ranking
+      - id: wave-2
+        parallel: false
+        openspec:
+          - share-poster

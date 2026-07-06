@@ -213,3 +213,36 @@ Polymarket 等预测市场里，同一个事件下不同选项的**资金与平�
 | v1.2 | 2026-07-06 | 定调为上线 MVP：适用端升级为 Web + H5 响应式，新增 AC-9；交易热度加入换手率（订单簿深度为可选信号，默认不启用）；明确非目标「不引入 AI/LLM」，偏差为纯规则计算；数据链路按生产标准（预取 + 分层 TTL + 降级，见 `data-source.md`）。 |
 | v1.3 | 2026-07-06 | 细化分享方案（4.5 → 分享海报与分发）：前端出图（`html-to-image`/`snapdom`，DPR/字体/图片代理口径），移动端 Web Share 原生面板直达多平台、桌面端下载·复制·intent 分享；后端新增图片代理；更新 AC-6、用户路径第 5 步。本期不做服务端分享页/OG 富预览。 |
 | v1.4 | 2026-07-06 | 需求评审修订：目标口径客观化（B1）；卡片偏差标签取事件内 `\|bias\|` 最大选项并标注选项名（B2）；排行范围锁定为当前 Tab 默认列表、删除「用户所选一组」分支（B3）；新增信息架构与导航说明（B5，含 4.0）；桌面「复制图片」改条件能力（B7）；社交口径正名为平台内参与/持仓热度（B9）；AC-3 引用算法黄金样例（B11）。并入 SUGGESTION：空态/规模上限/时间标注区分/受控离屏出图/单库主选/竖版优先/i18n 插值/状态归属/窄屏布局/链接解析归属/图片代理安全/搜索能力/故障注入/超长文本等（S1–S3、S5–S12、S15、S17、S20–S22）。 |
+
+## Manager Planning Coverage
+
+<!-- manager-plan-from-doc:start -->
+Planned at: 2026-07-06
+Plan: `manager/plan.yaml`
+
+Requirements:
+- `req-poly-data-integration`
+- `req-bias-algorithm`
+- `req-analysis-api`
+- `req-image-proxy`
+- `req-app-shell-i18n`
+- `req-event-list-input`
+- `req-event-detail`
+- `req-bias-ranking`
+- `req-share-poster`
+
+OpenSpec:
+- `poly-data-integration`
+- `bias-algorithm`
+- `image-proxy`
+- `analysis-api`
+- `web-app-shell-i18n`
+- `event-list-and-input`
+- `single-event-detail`
+- `bias-ranking`
+- `share-poster`
+
+Batches:
+- `batch-1`
+- `batch-2`
+<!-- manager-plan-from-doc:end -->
