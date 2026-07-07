@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
     redis_url: str = "redis://localhost:6379/0"
+    cors_allow_origins: list[str] = []
 
     # 图片代理（image-proxy）安全参数：默认仅覆盖 Polymarket 图片域，
     # 可经 .env / 环境变量覆盖（列表支持逗号分隔字符串或 JSON 数组）。
@@ -98,6 +99,13 @@ class Settings(BaseSettings):
     def _split_allowed_hosts(cls, value: object) -> object:
         # 允许在 .env 里用逗号分隔字符串配置白名单（非 JSON 数组），
         # 便于运维；同时保留原始 list / JSON 解析行为。
+        if isinstance(value, str) and not value.strip().startswith("["):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
+
+    @field_validator("cors_allow_origins", mode="before")
+    @classmethod
+    def _split_cors_allow_origins(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip().startswith("["):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
