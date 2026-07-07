@@ -22,7 +22,7 @@ import type {
 } from './events.types';
 
 function toEventOption(dto: EventOptionDto): EventOption {
-  return { name: dto.name, impliedProbability: dto.price };
+  return { name: dto.name, iconUrl: dto.icon_url ?? null, impliedProbability: dto.price };
 }
 
 function toEventCard(dto: EventCardDto): EventCard {
@@ -42,6 +42,7 @@ function toEventListData(dto: EventListDataDto): EventListData {
   return {
     category: dto.category,
     items: dto.items.map(toEventCard),
+    totalCount: dto.total_count,
     hasMore: dto.has_more,
   };
 }

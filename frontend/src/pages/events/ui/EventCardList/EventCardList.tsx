@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '../../../../shared/ui/EmptyState';
@@ -8,6 +9,7 @@ import styles from './EventCardList.module.css';
 
 export type EventCardListProps = {
   events: EventCardModel[];
+  totalCount: number;
   status: 'pending' | 'error' | 'success';
   category: EventCategory;
   hasNextPage: boolean;
@@ -23,6 +25,7 @@ export type EventCardListProps = {
  */
 export function EventCardList({
   events,
+  totalCount,
   status,
   category,
   hasNextPage,
@@ -32,6 +35,31 @@ export function EventCardList({
   onSwitchToHot,
 }: EventCardListProps) {
   const { t } = useTranslation();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (
+      !sentinel ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      typeof IntersectionObserver === 'undefined'
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '360px 0px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
 
   if (status === 'pending') {
     return (
@@ -63,21 +91,34 @@ export function EventCardList({
   }
 
   return (
-    <div className={styles.list}>
-      {events.map((event) => (
-        <EventCard key={event.slug} event={event} />
-      ))}
+    <section className={styles.results} aria-label={t('events.list.resultsLabel')}>
+      <div className={styles.summary}>
+        <span>{t('events.list.loadedCount', { shown: events.length, total: totalCount })}</span>
+      </div>
+
+      <div className={styles.list}>
+        {events.map((event) => (
+          <EventCard key={event.slug} event={event} />
+        ))}
+      </div>
 
       {hasNextPage ? (
-        <button
-          type="button"
-          className={styles.loadMore}
-          onClick={onLoadMore}
-          disabled={isFetchingNextPage}
-        >
-          {isFetchingNextPage ? t('events.list.loadingMore') : t('events.list.loadMore')}
-        </button>
-      ) : null}
-    </div>
+        <div ref={sentinelRef} className={styles.sentinel}>
+          <span className={styles.loadingMore} role={isFetchingNextPage ? 'status' : undefined}>
+            {isFetchingNextPage ? t('events.list.loadingMore') : t('events.list.scrollForMore')}
+          </span>
+          <button
+            type="button"
+            className={styles.loadMore}
+            onClick={onLoadMore}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? t('events.list.loadingMore') : t('events.list.loadMore')}
+          </button>
+        </div>
+      ) : (
+        <p className={styles.end}>{t('events.list.end')}</p>
+      )}
+    </section>
   );
 }

@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,7 +6,10 @@ import { renderWithI18n } from '../../../../shared/testing/renderWithI18n';
 import type { EventCard as EventCardModel } from '../../events.types';
 import { EventCardList } from './EventCardList';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const EVENT: EventCardModel = {
   slug: 'event-one',
@@ -27,6 +30,7 @@ describe('EventCardList', () => {
       <MemoryRouter>
         <EventCardList
           events={[EVENT]}
+          totalCount={2}
           status="success"
           category="hot"
           hasNextPage
@@ -45,6 +49,7 @@ describe('EventCardList', () => {
       <MemoryRouter>
         <EventCardList
           events={[EVENT]}
+          totalCount={1}
           status="success"
           category="hot"
           hasNextPage={false}
@@ -57,6 +62,49 @@ describe('EventCardList', () => {
     );
 
     expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument();
+    expect(screen.getByText('All currently indexed events are shown')).toBeInTheDocument();
+  });
+
+  it('auto-loads the next page when the sentinel enters view', async () => {
+    const onLoadMore = vi.fn();
+
+    class ImmediateIntersectionObserver implements IntersectionObserver {
+      readonly root = null;
+      readonly rootMargin = '';
+      readonly thresholds = [];
+
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+
+      disconnect = vi.fn(() => {});
+      observe = vi.fn(() => {
+        this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this);
+      });
+      takeRecords = vi.fn((): IntersectionObserverEntry[] => []);
+      unobserve = vi.fn(() => {});
+    }
+
+    vi.stubGlobal('IntersectionObserver', ImmediateIntersectionObserver);
+
+    await renderWithI18n(
+      <MemoryRouter>
+        <EventCardList
+          events={[EVENT]}
+          totalCount={3}
+          status="success"
+          category="hot"
+          hasNextPage
+          isFetchingNextPage={false}
+          onLoadMore={onLoadMore}
+          onRetry={noop}
+          onSwitchToHot={noop}
+        />
+      </MemoryRouter>,
+      'en',
+    );
+
+    expect(screen.getByText('1 / 3 currently indexed events shown')).toBeInTheDocument();
+    expect(screen.getByText('Keep scrolling to load more')).toBeInTheDocument();
+    await waitFor(() => expect(onLoadMore).toHaveBeenCalledTimes(1));
   });
 
   it('offers a switch-to-hot action when the world cup category is empty', async () => {
@@ -65,6 +113,7 @@ describe('EventCardList', () => {
       <MemoryRouter>
         <EventCardList
           events={[]}
+          totalCount={0}
           status="success"
           category="world_cup"
           hasNextPage={false}

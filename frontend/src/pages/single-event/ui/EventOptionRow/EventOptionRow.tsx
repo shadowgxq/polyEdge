@@ -41,7 +41,12 @@ export function EventOptionRow({ option, applicable }: EventOptionRowProps) {
   return (
     <li className={clsx(styles.row, showBias ? styles.withBias : styles.rawOnly)}>
       <span className={styles.optionName}>
-        <span className={styles.optionText}>{option.name}</span>
+        <span className={styles.optionHeader}>
+          {option.iconUrl ? (
+            <img className={styles.optionIcon} src={option.iconUrl} alt="" loading="lazy" />
+          ) : null}
+          <span className={styles.optionText}>{option.name}</span>
+        </span>
         <span className={styles.probabilityTrack} aria-hidden="true">
           <span
             className={styles.probabilityFill}

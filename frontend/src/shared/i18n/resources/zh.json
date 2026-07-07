@@ -58,6 +58,41 @@
     "notApplicable": "不适用偏差分析",
     "notApplicableHint": "仅展示原始选项数据。",
     "excluded": "已排除",
+    "labelTip": {
+      "trigger": "查看标签说明",
+      "title": "标签怎么读",
+      "description": "这些标签只描述当前快照里的价格位置与关注结构，不代表交易建议。",
+      "items": {
+        "consensusFavorite": {
+          "term": "共识热门",
+          "description": "市场概率靠前，关注度也基本匹配，属于结构相对正常的热门。"
+        },
+        "lowAttentionFavorite": {
+          "term": "低关注热门",
+          "description": "价格已经偏热门，但交易/讨论热度没有同步跟上。"
+        },
+        "overheatedFavorite": {
+          "term": "过热热门",
+          "description": "热门选项同时承接了更高关注，可能存在热度推高价格。"
+        },
+        "overheatedContender": {
+          "term": "过热中位",
+          "description": "概率不算头部，但关注度明显偏高，需要留意短期拥挤。"
+        },
+        "quietLongshot": {
+          "term": "普通冷门",
+          "description": "概率和关注度都低，暂时没有明显异常结构。"
+        },
+        "hypedLongshot": {
+          "term": "被炒作冷门",
+          "description": "概率很低但关注度偏高，更多像话题热度而非价格确认。"
+        },
+        "watchLongshot": {
+          "term": "观察冷门",
+          "description": "冷门里出现相对健康的关注/流动性，适合继续观察。"
+        }
+      }
+    },
     "commentCount_zero": "暂无讨论",
     "commentCount_other": "{{count}} 条讨论"
   },
@@ -75,8 +110,12 @@
     },
     "list": {
       "loading": "正在加载事件…",
+      "resultsLabel": "事件结果",
+      "loadedCount": "已显示 {{shown}} / {{total}} 个当前收录事件",
       "loadMore": "加载更多",
       "loadingMore": "加载中…",
+      "scrollForMore": "继续滚动自动加载更多",
+      "end": "已显示全部当前收录事件",
       "empty": "暂无事件",
       "worldCupEmpty": "当前无世界杯相关事件",
       "switchToHot": "切回热门"

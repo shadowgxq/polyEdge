@@ -41,10 +41,10 @@ class Settings(BaseSettings):
     # 定时预取：开关、频率与单次批量上限（受上游限流约束）。
     # 默认开启：启动即预热默认列表入缓存，避免首个请求冷启动同步回源阻塞首屏。
     market_prefetch_enabled: bool = True
-    market_prefetch_interval_seconds: int = 60
-    market_prefetch_batch_limit: int = 20
+    market_prefetch_interval_seconds: int = 30
+    market_prefetch_batch_limit: int = 100
     # 请求触发刷新意图的限频窗口：同一列表 / 单事件在窗口内只允许一个后台刷新任务。
-    market_refresh_throttle_seconds: int = 60
+    market_refresh_throttle_seconds: int = 30
 
     # 上游指数退避重试参数（基础间隔 / 最大重试次数 / 单次退避上限）。
     market_retry_base_delay_seconds: float = 0.5

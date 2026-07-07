@@ -17,10 +17,10 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 # 7. 入口脚本改可执行
-RUN chmod +x entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # 8. 暴露端口
 EXPOSE 8000
 
 # 9. 启动命令（先跑迁移，再启服务）
-CMD ["uv", "run", "./entrypoint.sh"]
+CMD ["uv", "run", "/app/entrypoint.sh"]

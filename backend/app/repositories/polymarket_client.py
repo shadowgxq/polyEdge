@@ -83,6 +83,11 @@ def _market_signals(market: dict) -> dict[str, float | None]:
     }
 
 
+def _market_icon_url(market: dict) -> str | None:
+    icon = str(market.get("icon") or market.get("image") or "").strip()
+    return icon or None
+
+
 class PolymarketClient:
     """Gamma + CLOB 双 API 只读客户端。"""
 
@@ -218,6 +223,7 @@ class PolymarketClient:
         market_volume24hr = _to_float(market.get("volume24hr"))
         # 扩展信号为 market 级白拿字段；与 volume 同处理：可拆到选项时映射，多 outcome 置 None。
         market_signals = _market_signals(market)
+        icon_url = _market_icon_url(market)
         group_title = str(market.get("groupItemTitle") or "").strip()
 
         # 分组式二元子市场（如「某队夺冠 Yes/No」，60 支队 = 60 个此类市场）：
@@ -232,6 +238,7 @@ class PolymarketClient:
             return [
                 MarketOption(
                     outcome=group_title,
+                    icon_url=icon_url,
                     price=price,
                     price_source=source,
                     volume=market_volume,
@@ -268,6 +275,7 @@ class PolymarketClient:
             options.append(
                 MarketOption(
                     outcome=str(label),
+                    icon_url=icon_url,
                     price=price,
                     price_source=source,
                     volume=volume,

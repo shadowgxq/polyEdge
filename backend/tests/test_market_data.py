@@ -174,6 +174,7 @@ def test_grouped_binary_markets_collapse_to_one_option_per_group():
         "markets": [
             {
                 "groupItemTitle": "France",
+                "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/france.png",
                 "outcomes": '["Yes", "No"]',
                 "outcomePrices": '["0.33", "0.67"]',
                 "clobTokenIds": '["f-yes", "f-no"]',
@@ -206,6 +207,7 @@ def test_grouped_binary_markets_collapse_to_one_option_per_group():
     assert [option.outcome for option in event.options] == ["France", "Spain"]
     france = event.options[0]
     assert france.price == 0.33  # Yes 侧概率
+    assert france.icon_url == "https://polymarket-upload.s3.us-east-2.amazonaws.com/france.png"
     assert france.price_source is PriceSource.OUTCOME_PRICES_FALLBACK
     assert france.volume == 500.0  # market 级量纲作候选项级，不重复计
     assert france.traders == 12

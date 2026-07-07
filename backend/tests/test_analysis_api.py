@@ -26,9 +26,10 @@ from app.services.rate_limit_service import RateLimitService
 _SNAPSHOT = datetime(2026, 7, 6, tzinfo=timezone.utc)
 
 
-def _option(outcome, price, volume, traders=100):
+def _option(outcome, price, volume, traders=100, icon_url=None):
     return MarketOption(
         outcome=outcome,
+        icon_url=icon_url,
         price=price,
         price_source=PriceSource.CLOB_MIDPOINT,
         volume=volume,
@@ -239,7 +240,9 @@ class FakeMarketData:
 
 
 def test_event_detail_returns_option_bias_and_labels():
-    service = AnalysisService(FakeMarketData(event=_skewed_event()))
+    event = _skewed_event()
+    event.options[0].icon_url = "https://polymarket-upload.s3.us-east-2.amazonaws.com/yes.png"
+    service = AnalysisService(FakeMarketData(event=event))
     detail = service.get_event_detail("hot-event")
 
     assert detail.applicable is True
@@ -247,6 +250,7 @@ def test_event_detail_returns_option_bias_and_labels():
     assert detail.comment_count == 7
     assert detail.data_snapshot_at == _SNAPSHOT
     yes = next(o for o in detail.options if o.name == "Yes")
+    assert yes.icon_url == "https://polymarket-upload.s3.us-east-2.amazonaws.com/yes.png"
     assert yes.bias_score is not None and yes.bias_score > 0
     assert yes.label is not None and yes.label.zh and yes.label.en
 
@@ -342,6 +346,7 @@ def test_event_list_world_cup_empty_returns_empty_items():
     service = AnalysisService(FakeMarketData(world_cup=[]))
     result = service.get_event_list(EventCategory.WORLD_CUP, 1, 20)
     assert result.items == []
+    assert result.total_count == 0
     assert result.has_more is False
 
 
@@ -350,6 +355,7 @@ def test_event_list_pagination_has_more():
     service = AnalysisService(FakeMarketData(popular=events))
     result = service.get_event_list(EventCategory.HOT, page=1, page_size=2)
     assert len(result.items) == 2
+    assert result.total_count == 3
     assert result.has_more is True
 
 

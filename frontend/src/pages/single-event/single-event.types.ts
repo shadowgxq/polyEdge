@@ -22,6 +22,8 @@ export type OptionBiasLabelText = {
 
 export type OptionAnalysisDto = {
   name: string;
+  /** Polymarket 选项图标/图片 URL，仅用于展示。 */
+  icon_url?: string | null;
   /** 选项价格，0..1 区间即隐含概率。 */
   price: number;
   /** 热度指标，口径由后端决定。 */
@@ -59,6 +61,8 @@ export type EventDetailDto = {
 
 export type OptionAnalysis = {
   name: string;
+  /** Polymarket 选项图标/图片 URL，仅用于展示。 */
+  iconUrl?: string | null;
   /** 隐含概率，0..1 区间。 */
   impliedProbability: number;
   heat: number;

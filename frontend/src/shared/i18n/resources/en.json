@@ -58,6 +58,41 @@
     "notApplicable": "Bias analysis not applicable",
     "notApplicableHint": "Showing raw option data only.",
     "excluded": "Excluded",
+    "labelTip": {
+      "trigger": "View label notes",
+      "title": "How to read labels",
+      "description": "Labels describe the current price and attention structure only. They are not trading advice.",
+      "items": {
+        "consensusFavorite": {
+          "term": "Consensus Favorite",
+          "description": "A leading-probability option whose attention roughly matches its price."
+        },
+        "lowAttentionFavorite": {
+          "term": "Low-attention Favorite",
+          "description": "The market prices it like a favorite, but attention has not caught up."
+        },
+        "overheatedFavorite": {
+          "term": "Overheated Favorite",
+          "description": "A favorite drawing extra attention, suggesting heat may be lifting price."
+        },
+        "overheatedContender": {
+          "term": "Overheated Contender",
+          "description": "A mid-tier option with unusually high attention; watch for short-term crowding."
+        },
+        "quietLongshot": {
+          "term": "Quiet Longshot",
+          "description": "Low probability and low attention, with no obvious structural anomaly."
+        },
+        "hypedLongshot": {
+          "term": "Hyped Longshot",
+          "description": "Low probability but high attention, more topic heat than price confirmation."
+        },
+        "watchLongshot": {
+          "term": "Watch Longshot",
+          "description": "A longshot with comparatively healthier attention or liquidity worth monitoring."
+        }
+      }
+    },
     "commentCount_zero": "No comments yet",
     "commentCount_one": "{{count}} comment",
     "commentCount_other": "{{count}} comments"
@@ -76,8 +111,12 @@
     },
     "list": {
       "loading": "Loading events…",
+      "resultsLabel": "Event results",
+      "loadedCount": "{{shown}} / {{total}} currently indexed events shown",
       "loadMore": "Load more",
       "loadingMore": "Loading…",
+      "scrollForMore": "Keep scrolling to load more",
+      "end": "All currently indexed events are shown",
       "empty": "No events yet",
       "worldCupEmpty": "No World Cup events right now",
       "switchToHot": "Back to Hot"

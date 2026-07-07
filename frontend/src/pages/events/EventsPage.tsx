@@ -27,6 +27,7 @@ export function EventsPage() {
   const category = readCategory(searchParams.get(CATEGORY_PARAM));
   const listQuery = useEventListQuery(category);
   const events = listQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const totalCount = listQuery.data?.pages[0]?.totalCount ?? events.length;
 
   const handleCategoryChange = (next: EventCategory) => {
     setSearchParams(
@@ -60,6 +61,7 @@ export function EventsPage() {
 
       <EventCardList
         events={events}
+        totalCount={totalCount}
         status={listQuery.status}
         category={category}
         hasNextPage={listQuery.hasNextPage}

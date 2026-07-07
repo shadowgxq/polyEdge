@@ -17,6 +17,7 @@ import type {
 function toOptionAnalysis(dto: OptionAnalysisDto): OptionAnalysis {
   return {
     name: dto.name,
+    iconUrl: dto.icon_url ?? null,
     impliedProbability: dto.price,
     heat: dto.heat,
     biasScore: dto.bias_score,

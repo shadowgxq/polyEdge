@@ -28,6 +28,7 @@ class MarketOption(BaseModel):
     """
 
     outcome: str  # 选项标识（如 "Yes" / "Argentina"），用于区分同一事件下多选项
+    icon_url: str | None = None  # Polymarket 选项图标/图片 URL，仅作展示元数据
     price: float | None = None  # 隐含概率 0~1，主源 CLOB、退化回退 outcomePrices
     price_source: PriceSource = PriceSource.UNAVAILABLE
     volume: float | None = None

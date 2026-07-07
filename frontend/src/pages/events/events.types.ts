@@ -19,6 +19,8 @@ export type EventSearchScope = 'upstream' | 'local_cache';
 
 export type EventOptionDto = {
   name: string;
+  /** Polymarket 选项图标/图片 URL，仅用于展示。 */
+  icon_url?: string | null;
   /** 选项价格，0..1 区间即隐含概率。 */
   price: number;
 };
@@ -44,6 +46,8 @@ export type EventCardDto = {
 export type EventListDataDto = {
   category: EventCategory;
   items: EventCardDto[];
+  /** 当前分类已收录/缓存的事件总数，不代表 Polymarket 全站总量。 */
+  total_count: number;
   has_more: boolean;
 };
 
@@ -71,6 +75,8 @@ export type EventResolveDataDto = {
 
 export type EventOption = {
   name: string;
+  /** Polymarket 选项图标/图片 URL，仅用于展示。 */
+  iconUrl?: string | null;
   /** 隐含概率，0..1 区间。 */
   impliedProbability: number;
 };
@@ -98,6 +104,8 @@ export type EventCard = {
 export type EventListData = {
   category: EventCategory;
   items: EventCard[];
+  /** 当前分类已收录/缓存的事件总数，用于列表计数与懒加载进度提示。 */
+  totalCount: number;
   hasMore: boolean;
 };
 

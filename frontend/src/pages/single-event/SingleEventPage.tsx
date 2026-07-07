@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
@@ -8,23 +9,13 @@ import { useEventDetailQuery } from './single-event.queries';
 import type { EventDetail, OptionAnalysis } from './single-event.types';
 import { EventDetailNotice } from './ui/EventDetailNotice';
 import { EventEngagement } from './ui/EventEngagement';
-import { EventOptionList } from './ui/EventOptionList';
+import {
+  DEFAULT_BIAS_SORT_DIRECTION,
+  EventOptionList,
+  sortOptionsByBias,
+  type BiasSortDirection,
+} from './ui/EventOptionList';
 import styles from './SingleEventPage.module.css';
-
-/**
- * 核心选项：在未被排除的选项中取 `|biasScore|` 最大项（与列表卡片概览口径一致，
- * PRD §4.1、design D6）。前端只挑选不重算偏差。
- */
-function selectCoreOption(options: OptionAnalysis[]): OptionAnalysis | undefined {
-  return options
-    .filter((option) => !option.excluded)
-    .reduce<OptionAnalysis | undefined>((best, option) => {
-      if (!best || Math.abs(option.biasScore) > Math.abs(best.biasScore)) {
-        return option;
-      }
-      return best;
-    }, undefined);
-}
 
 /**
  * 组装单事件海报内容（复用明细展示数据，不重算偏差）。
@@ -66,14 +57,21 @@ export function SingleEventPage() {
 
   const detailQuery = useEventDetailQuery(eventId);
   const detail = detailQuery.data;
+  const [sortDirection, setSortDirection] = useState<BiasSortDirection>(
+    DEFAULT_BIAS_SORT_DIRECTION,
+  );
+
   const visibleOptions = detail?.options.filter((option) => !option.excluded) ?? [];
+  const isBiasApplicable = detail?.applicable ?? false;
+  // 列表与分享共用同一排序结果：分享的核心选项恒为当前排序的第一行。
+  const orderedOptions = sortOptionsByBias(visibleOptions, sortDirection, isBiasApplicable);
 
   function handleBack() {
     navigate(-1);
   }
 
   const currentCrumb = detail?.title ?? eventId ?? '';
-  const coreOption = detail?.applicable ? selectCoreOption(visibleOptions) : undefined;
+  const coreOption = isBiasApplicable ? orderedOptions[0] : undefined;
   const posterContent =
     detail && coreOption ? buildEventPosterContent(detail, coreOption, i18n.language) : null;
 
@@ -137,7 +135,12 @@ export function SingleEventPage() {
 
           <EventEngagement commentCount={detail.commentCount} snapshotAt={detail.dataSnapshotAt} />
 
-          <EventOptionList options={visibleOptions} applicable={detail.applicable} />
+          <EventOptionList
+            options={orderedOptions}
+            applicable={detail.applicable}
+            sortDirection={sortDirection}
+            onSortChange={setSortDirection}
+          />
         </div>
       )}
     </section>

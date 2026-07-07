@@ -36,6 +36,7 @@ class OptionOverview(BaseModel):
     """事件卡片上的选项赔率概览（PRD §4.1）。"""
 
     name: str
+    icon_url: str | None = None
     price: float | None = None
 
 
@@ -46,6 +47,7 @@ class OptionAnalysis(BaseModel):
     """
 
     name: str  # 选项名（outcome）
+    icon_url: str | None = None  # Polymarket 选项图标/图片 URL，仅用于展示
     price: float | None = None  # 赔率 / 隐含概率
     heat: float | None = None  # 热度份额 hs_i（退化/排除时可空）
     bias_score: int | None = None  # 偏差评分 bias_i ∈ [-100, 100]（= 交易集中度残差）
@@ -93,6 +95,7 @@ class EventListResponse(BaseModel):
 
     category: EventCategory
     items: list[EventCard] = Field(default_factory=list)
+    total_count: int = 0  # 当前分类已收录/缓存的事件总数，不代表上游全站总量
     has_more: bool = False  # 是否还有下一页（空态时为 False）
 
 

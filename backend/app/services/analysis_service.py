@@ -105,6 +105,7 @@ class AnalysisService:
 
     def _build_event_detail(self, event: MarketEvent) -> EventDetail:
         result = compute_event_bias(self._to_event_input(event))
+        icon_by_outcome = {option.outcome: option.icon_url for option in event.options}
         return EventDetail(
             slug=event.slug,
             title=event.title,
@@ -115,6 +116,7 @@ class AnalysisService:
             options=[
                 OptionAnalysis(
                     name=option.label or option.option_id,
+                    icon_url=icon_by_outcome.get(option.option_id),
                     price=option.price,
                     heat=option.hs,
                     bias_score=option.bias,
@@ -144,6 +146,7 @@ class AnalysisService:
         return EventListResponse(
             category=category,
             items=items,
+            total_count=len(events),
             has_more=len(events) > start + page_size,
         )
 
@@ -159,7 +162,11 @@ class AnalysisService:
             slug=event.slug,
             title=event.title,
             options=[
-                OptionOverview(name=option.outcome, price=option.price)
+                OptionOverview(
+                    name=option.outcome,
+                    icon_url=option.icon_url,
+                    price=option.price,
+                )
                 for option in preview_options
             ],
             options_total=len(event.options),

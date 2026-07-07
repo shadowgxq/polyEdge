@@ -74,7 +74,12 @@ export function EventCard({ event }: EventCardProps) {
             className={clsx(styles.option, index === 0 && styles.leadOption)}
           >
             <div className={styles.optionRow}>
-              <span className={styles.optionName}>{option.name}</span>
+              <span className={styles.optionIdentity}>
+                {option.iconUrl ? (
+                  <img className={styles.optionIcon} src={option.iconUrl} alt="" loading="lazy" />
+                ) : null}
+                <span className={styles.optionName}>{option.name}</span>
+              </span>
               <span className={styles.optionValue}>
                 {probabilityFormatter.format(option.impliedProbability)}
               </span>
